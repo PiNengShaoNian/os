@@ -36,6 +36,11 @@ int main(int argc, char **argv) {
     FileInfo *boot_fileinfo = read_file(boot_file_path);
     write_bootloader(floppy, boot_fileinfo);
 
+    char setup_file_path[PATH_MAX];
+    sprintf(setup_file_path, "%s%s", project_path, "build/boot/setup.o");
+    FileInfo *setup_fileinfo = read_file(setup_file_path);
+    write_floppy_fileinfo(floppy, setup_fileinfo, 0, 0, 2);
+
     // 软盘的路径
     char img_filename[PATH_MAX];
     sprintf(img_filename, "%sa.img", project_path);

@@ -1,6 +1,6 @@
 BUILD=./build
 
-all: ${BUILD}/boot/boot.o
+all: ${BUILD}/boot/boot.o ${BUILD}/boot/setup.o
 
 ${BUILD}/boot/%.o: oskernel/boot/%.asm
 	$(shell mkdir -p ${BUILD}/boot)

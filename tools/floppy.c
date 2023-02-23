@@ -22,6 +22,21 @@ void write_bootloader(Floppy *floppy, FileInfo *fileInfo) {
     memcpy(floppy->content, fileInfo->content, fileInfo->size);
 }
 
+void write_floppy_fileinfo(Floppy *floppy, FileInfo *fileInfo, int face, int trace, int section) {
+    if(floppy == NULL || fileInfo == NULL){
+        ERROR_PRINT("NULL pointer\n");
+        return;
+    }
+
+    char *offset = 0;
+
+    printf("[%s] 文件大小超过 512: %d\n", fileInfo->name, fileInfo->size);
+
+    offset = floppy->content + (section - 1) * 512;
+
+    memcpy(offset, fileInfo->content, fileInfo->size);
+}
+
 void create_image(const char *name, Floppy *floppy) {
     if(name == NULL || floppy == NULL) {
         ERROR_PRINT("NULL pointer\n");
