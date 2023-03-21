@@ -8,19 +8,24 @@ KERNEL_ADDR equ 0x1200
 SEG_BASE equ 0
 SEG_LIMIT equ 0xfffff
 
+B8000_SEG_BASE equ 0xb8000
+B8000_SEG_LIMIT equ 0x7fff
+
 CODE_SELECTOR equ (1 << 3)        ; gdt_index = 1
 DATA_SELECTOR equ (2 << 3)        ; gdt_index = 2
+B8000_SELECTOR equ (3 << 3)       ; gdt_index = 3
+
 
 gdt_base:
-    dd 0, 0  ; 固定设置第一条gdt表项全为0
+    dd 0, 0
 gdt_code:
-    dw SEG_LIMIT & 0xffff     ; 0-15 SEG_LIMIT
-    dw SEG_BASE & 0xffff      ; 0-15 SEG_BASE
-    db SEG_BASE >> 16 & 0xff  ; 16-23 SEG_BASE
-    ;    P_DPL_S_TYPE           P: 有效位 DPL: 权限位 S: 该位为 1 表示这是一个数据段或者代码段 TYPE: 段中的数据类型
+    dw SEG_LIMIT & 0xffff
+    dw SEG_BASE & 0xffff
+    db SEG_BASE >> 16 & 0xff
+    ;    P_DPL_S_TYPE
     db 0b1_00_1_1000
     ;    G_DB_AVL_LIMIT
-    db 0b0_1_00_0000 | (SEG_LIMIT >> 16 & 0xf)
+    db 0b1_1_00_0000 | (SEG_LIMIT >> 16 & 0xf)
     db SEG_BASE >> 24 & 0xf
 gdt_data:
     dw SEG_LIMIT & 0xffff
@@ -31,6 +36,15 @@ gdt_data:
     ;    G_DB_AVL_LIMIT
     db 0b1_1_00_0000 | (SEG_LIMIT >> 16 & 0xf)
     db SEG_BASE >> 24 & 0xf
+gdt_b8000:
+    dw B8000_SEG_LIMIT & 0xffff
+    dw B8000_SEG_BASE & 0xffff
+    db B8000_SEG_BASE >> 16 & 0xff
+    ;    P_DPL_S_TYPE
+    db 0b1_00_1_0010
+    ;    G_DB_AVL_LIMIT
+    db 0b0_1_00_0000 | (B8000_SEG_LIMIT >> 16 & 0xf)
+    db B8000_SEG_BASE >> 24 & 0xf
 gdt_ptr:
     dw $ - gdt_base
     dd gdt_base
