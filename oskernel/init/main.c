@@ -5,9 +5,9 @@
 void kernel_main(void) {
     console_init();
     gdt_init();
+    idt_init();
 
-    char* s = "hello world";
-    printk(s);
+    __asm__("sti;");
 
     while (true);
 }
