@@ -8,16 +8,22 @@ interrupt_gate_t interrupt_table[INTERRUPT_TABLE_SIZE] = {0};
 
 xdt_ptr_t idt_ptr;
 
-extern void interrupt_handler();
+extern void interrupt_handler_entry();
 
 extern void keymap_handler_entry();
+
+extern int interrupt_handler_table[0x2f];
 
 void idt_init() {
     printk("init idt...\n");
     for (int i = 0; i < INTERRUPT_TABLE_SIZE; ++i) {
         interrupt_gate_t *p = &interrupt_table[i];
 
-        int handler = interrupt_handler;
+        int handler = (int)interrupt_handler_entry;
+
+        if(i <= 0x15) {
+            handler = (int)interrupt_handler_table[i];
+        }
 
         if (i == 0x21) {
             handler = keymap_handler_entry;
@@ -35,9 +41,6 @@ void idt_init() {
 
     // 让CPU知道中断向量表
     write_xdt_ptr(&idt_ptr, INTERRUPT_TABLE_SIZE * 8, interrupt_table);
-
-    BOCHS_DEBUG_MAGIC
-    BOCHS_DEBUG_MAGIC
 
     asm volatile("lidt idt_ptr;");
 }

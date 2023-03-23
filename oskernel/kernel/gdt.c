@@ -90,7 +90,5 @@ void gdt_init() {
     // 这里要减1取[0,limit]而不是[0,limit)
     gdt_ptr.limit = sizeof(gdt) - 1;
 
-    BOCHS_DEBUG_MAGIC
-
     __asm__ volatile ("lgdt gdt_ptr;");
 }
