@@ -9,7 +9,5 @@ void kernel_main(void) {
 
     __asm__("sti;");
 
-    int i = 10 / 0;
-
     while (true);
 }

@@ -12,6 +12,8 @@ extern void interrupt_handler_entry();
 
 extern void keymap_handler_entry();
 
+extern void clock_handler_entry();
+
 extern int interrupt_handler_table[0x2f];
 
 void idt_init() {
@@ -19,14 +21,17 @@ void idt_init() {
     for (int i = 0; i < INTERRUPT_TABLE_SIZE; ++i) {
         interrupt_gate_t *p = &interrupt_table[i];
 
-        int handler = (int)interrupt_handler_entry;
+        int handler = (int) interrupt_handler_entry;
 
-        if(i <= 0x15) {
-            handler = (int)interrupt_handler_table[i];
+        if (i <= 0x15) {
+            handler = (int) interrupt_handler_table[i];
         }
 
+        if (i == 0x20) {
+            handler = (int) clock_handler_entry;
+        }
         if (i == 0x21) {
-            handler = keymap_handler_entry;
+            handler = (int) keymap_handler_entry;
         }
 
         p->offset0 = handler & 0xffff;
