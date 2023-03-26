@@ -37,4 +37,7 @@ void print_check_memory_info();
 void memory_init();
 void memory_map_init();
 
+void *get_free_page();
+void free_page(void *p);
+
 #endif // OSKERNEL_MM_H
