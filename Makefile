@@ -65,7 +65,11 @@ bochs: all
 	bochs -q -f bochsrc
 
 qemug: all
-	qemu-system-x86_64 -m 32M -hda ./build/hd.img -S -s
+	qemu-system-i386 \
+    -m 32M \
+    -boot c \
+    -hda ./build/hd.img \
+    -s -S
 
 qemu: all
 	qemu-system-i386 \

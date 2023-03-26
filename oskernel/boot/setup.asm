@@ -4,6 +4,14 @@
 [SECTION .data]
 KERNEL_ADDR equ 0x1200
 
+; 用于存储内存检测的数据
+ARDS_TIMES_BUFFER equ 0x1100
+ARDS_BUFFER equ 0x1102
+ARDS_TIMES dw 0
+
+; 存储填充以后的offset，下次检测的结果接着写
+CHECK_BUFFER_OFFSET dw 0
+
 [SECTION .gdt]
 SEG_BASE equ 0
 SEG_LIMIT equ 0xfffff
@@ -64,6 +72,47 @@ setup_start:
     mov si, prepare_enter_protected_mode_msg
     call print
 
+; 内存检测
+memory_check:
+    xor ebx, ebx  ; ebx = 0
+    mov di, ARDS_BUFFER ; es:di 指向一块内存   es因为前面已设置为0，这里不重复赋值
+
+.loop:
+    ; 下面的汇编指令是将一个特定的4个字符的字符串"SMAP"（即0x534D4150）赋值给寄存器EDX。
+    ; 这个字符串是一个“指令头”，用于向BIOS请求系统的物理内存信息。当向BIOS发出0x15中断时，
+    ; EAX寄存器中的值应该是0xE820，EDX寄存器中的值应该是"SMAP"字符串，ES:DI寄存器指向存放内存信息的结构体的位置，
+    ; ECX寄存器中的值是存放内存信息结构体的长度。
+    mov eax, 0xe820  ; ax = 0xe820
+    ; 每个内存信息项包含以下信息，总共20字节
+    ; typedef struct {
+    ;     unsigned int  base_addr_low;    //内存基地址的低32位
+    ;     unsigned int  base_addr_high;   //内存基地址的高32位
+    ;     unsigned int  length_low;       //内存块长度的低32位
+    ;     unsigned int  length_high;      //内存块长度的高32位
+    ;     unsigned int  type;             //描述内存块的类型
+    ; }check_memmory_item_t;
+    mov ecx, 20
+    mov edx, 0x534D4150     ; edx = 0x534D4150
+    int 0x15
+
+    jc memory_check_error ; 如果出错
+
+    add di, cx
+
+    inc dword [ARDS_TIMES] ; 检测次数 + 1
+
+    cmp ebx, 0 ; 在检测的时候，ebx会被bios修改，ebx不为0就要继续检测
+    jne .loop
+
+    mov ax, [ARDS_TIMES] ; 保存内存检测次数
+    mov [ARDS_TIMES_BUFFER], ax
+
+    mov [CHECK_BUFFER_OFFSET], di   ; 保存offset
+
+.memory_check_success:
+    mov si, memory_check_success_msg
+    call print
+
 enter_protected_mode:
     ; 关中断
     cli
@@ -82,6 +131,13 @@ enter_protected_mode:
     mov   cr0, eax
 
     jmp CODE_SELECTOR:protected_mode
+
+memory_check_error:
+    mov     si, memory_check_error_msg
+    call    print
+
+    jmp $
+
 
 ; 如何调用
 ; mov     si, msg   ; 1 传入字符串
@@ -202,3 +258,10 @@ read_hd_data:
 
 prepare_enter_protected_mode_msg:
     db "Prepare to go into protected mode...", 10, 13, 0
+
+memory_check_error_msg:
+    db "memory check fail...", 10, 13, 0
+
+memory_check_success_msg:
+    db "memory check success...", 10, 13, 0
+
