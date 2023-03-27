@@ -37,7 +37,7 @@ void *virtual_memory_init() {
 
         if (i == 0) {
             // 第一块映射区，给内核用
-            for (int j = 0; j < 0x200; ++j) {
+            for (int j = 0; j < 0x400; ++j) {
                 int *pte_p = &pte_arr[j];
 
                 int virtual_addr = j * PAGE_SIZE;
@@ -63,10 +63,7 @@ void *virtual_memory_init() {
 
     BOCHS_DEBUG_MAGIC
 
-    printk("pdt addr%p\n", pdt);
+    printk("pdt addr: 0x%p\n", pdt);
 
     return pdt;
-}
-
-void *kmalloc(size_t size) {
 }
