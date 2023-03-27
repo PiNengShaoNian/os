@@ -1,12 +1,18 @@
 #include "../include/asm/system.h"
 #include "../include/linux/kernel.h"
 #include "../include/linux/mm.h"
+#include "../include/linux/task.h"
 #include "../include/string.h"
 
 // 需要完整映射4g大小的物理内存，需要1个大4096字节的PDT表
 // 和1024个4096字节大小的PT, 所以总共所需 4096 + 1024 * 4096
 
 #define PDT_START_ADDR 0x20000
+
+// 线性地址从2M开始用
+#define VIRTUAL_MEM_START 0x200000
+
+extern task_t *current;
 
 void *virtual_memory_init() {
     int *pdt = (int *) PDT_START_ADDR;
@@ -31,21 +37,21 @@ void *virtual_memory_init() {
 
         if (i == 0) {
             // 第一块映射区，给内核用
-            for (int j = 0; j < NPTE; ++j) {
+            for (int j = 0; j < 0x200; ++j) {
                 int *pte_p = &pte_arr[j];
 
                 int virtual_addr = j * PAGE_SIZE;
                 *pte_p = 0b00000000000000000000000000000111 | virtual_addr;
             }
         } else {
-            for (int j = 0; j < NPTE; ++j) {
-                int *pte_p = &pte_arr[j];
-
-                int virtual_addr = j * PAGE_SIZE;
-                virtual_addr = virtual_addr + i * NPTE * PAGE_SIZE;
-
-                *pte_p = 0b00000000000000000000000000000111 | virtual_addr;
-            }
+//            for (int j = 0; j < NPTE; ++j) {
+//                int *pte_p = &pte_arr[j];
+//
+//                int virtual_addr = j * PAGE_SIZE;
+//                virtual_addr = virtual_addr + i * NPTE * PAGE_SIZE;
+//
+//                *pte_p = 0b00000000000000000000000000000111 | virtual_addr;
+//            }
         }
     }
 
@@ -57,5 +63,10 @@ void *virtual_memory_init() {
 
     BOCHS_DEBUG_MAGIC
 
+    printk("pdt addr%p\n", pdt);
+
     return pdt;
+}
+
+void *kmalloc(size_t size) {
 }

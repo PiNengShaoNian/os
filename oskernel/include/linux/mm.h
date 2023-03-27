@@ -46,4 +46,7 @@ void *get_free_page();
 
 void free_page(void *p);
 
+// 分配、释放虚拟内存
+void *kmalloc(size_t size);
+
 #endif // OSKERNEL_MM_H
