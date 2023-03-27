@@ -48,34 +48,13 @@ void memory_map_init() {
     }
 
     g_physics_memory_map.addr_base = (uint) VALID_MEMORY_FROM;
-    g_physics_memory_map.map = (uchar *) VALID_MEMORY_FROM;
+    g_physics_memory_map.map = (uchar *) 0x10000;
 
     // 共有这么多物理页可用
     g_physics_memory_map.pages_total = g_physics_memory.pages_total;
 
     // 清零
     memset(g_physics_memory_map.map, 0, g_physics_memory_map.pages_total);
-
-    // 1B映射一个page，共需要这么多page
-    g_physics_memory_map.bitmap_item_used = g_physics_memory_map.pages_total / PAGE_SIZE;
-    if (g_physics_memory_map.pages_total % PAGE_SIZE != 0) {
-        g_physics_memory_map.bitmap_item_used += 1;
-    }
-
-    // 这些物理页被map占用了，将他们标记为不可用
-    for (int i = 0; i < g_physics_memory_map.bitmap_item_used; ++i) {
-        g_physics_memory_map.map[i] = 1;
-    }
-
-    printk("physics memory map position: 0x%X(%dM) - 0x%X(%dM)\n",
-           g_physics_memory_map.map,
-           ((int) g_physics_memory_map.map) / 1024 / 1024,
-           g_physics_memory_map.addr_base,
-           g_physics_memory_map.addr_base / 1024 / 1024);
-
-    printk("physical memory starts here: 0x%X(%dM), used: %d pages\n",
-           g_physics_memory_map.addr_base, g_physics_memory_map.addr_base / 1024 / 1024,
-           g_physics_memory_map.bitmap_item_used);
 }
 
 void print_check_memory_info() {

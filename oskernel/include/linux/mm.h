@@ -3,6 +3,8 @@
 
 #include "types.h"
 
+#define PAGE_SIZE 4096
+
 typedef struct {
     unsigned int base_addr_low; // 内存基地址的低32位
     unsigned int base_addr_high; // 内存基地址的高32位
@@ -35,9 +37,13 @@ typedef struct {
 void print_check_memory_info();
 
 void memory_init();
+
 void memory_map_init();
 
+void *virtual_memory_init();
+
 void *get_free_page();
+
 void free_page(void *p);
 
 #endif // OSKERNEL_MM_H

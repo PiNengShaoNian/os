@@ -15,13 +15,7 @@ void kernel_main(void) {
     memory_map_init();
 
     print_check_memory_info();
-
-    for(int i = 0; i < 3; ++i) {
-        void *p = get_free_page();
-        printk("%p\n", p);
-
-        free_page(p);
-    }
+    virtual_memory_init();
 
     __asm__("sti;");
 
