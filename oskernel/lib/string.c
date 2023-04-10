@@ -5,7 +5,7 @@ char *strcpy(char *dest, const char *src) {
     char *ptr = dest;
     while(true) {
         *ptr++ = *src;
-        if(*src++ == EOF)
+        if(*src++ == EOS)
             return dest;
     }
 }

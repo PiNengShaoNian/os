@@ -35,7 +35,7 @@ void memory_init() {
         return;
     }
 
-    g_physics_memory.pages_total = (g_physics_memory.addr_end - g_physics_memory.addr_start) >> 12;
+    g_physics_memory.pages_total = g_physics_memory.addr_end >> 12;
     g_physics_memory.pages_used = 0;
     g_physics_memory.pages_free = g_physics_memory.pages_total - g_physics_memory.pages_used;
 }

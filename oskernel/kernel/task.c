@@ -1,6 +1,7 @@
 #include "../include/linux/kernel.h"
 #include "../include/linux/task.h"
 #include "../include/linux/mm.h"
+#include "../include/string.h"
 
 extern task_t *current;
 
@@ -54,14 +55,17 @@ task_t *create_task(char *name, task_fun_t fun, int priority) {
     return task;
 }
 
+void *t1_fun(void *arg) {
+    printk("t1\n");
+}
+
 void *idle(void *arg) {
-    printk("#1 idle task running...\n");
+    create_task("t1", t1_fun, 1);
 
     while (true) {
         printk("#2 idle task running...\n");
 
-        __asm__ volatile ("sti;");
-        __asm__ volatile ("hlt;");
+        sched();
     }
 }
 
@@ -79,4 +83,44 @@ pid_t get_task_pid(task_t *task) {
 
 pid_t get_task_ppid(task_t *task) {
     return task->ppid;
+}
+
+void task_exit(int code, task_t *task) {
+    for (int i = 1; i < NR_TASKS; ++i) {
+        task_t *tmp = tasks[i];
+
+        if (task == tmp) {
+            printk("task exit: %s\n", tmp->name);
+
+            tmp->exit_code = code;
+
+            // 先移除，后面有父子进程再相应处理
+            tasks[i] = NULL;
+
+            current = NULL;
+
+            kfree_s(tmp, 4096);
+
+            break;
+        }
+    }
+}
+
+void current_task_exit(int code) {
+    for (int i = 1; i < NR_TASKS; ++i) {
+        task_t *tmp = tasks[i];
+
+        if (current == tmp) {
+            printk("task exit: %s\n", tmp->name);
+
+            tmp->exit_code = code;
+
+            // 先移除，后面有父子进程再相应处理
+            tasks[i] = NULL;
+
+            current = NULL;
+
+            break;
+        }
+    }
 }
