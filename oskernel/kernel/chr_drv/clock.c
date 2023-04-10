@@ -44,5 +44,6 @@ void clock_handler(int idt_index) {
 
     cpu_tickes++;
 
+    task_wakeup();
     do_timer();
 }
