@@ -29,7 +29,7 @@ ${BUILD}/kernel.bin: ${BUILD}/boot/head.o ${BUILD}/init/main.o ${BUILD}/kernel/a
 	${BUILD}/lib/string.o ${BUILD}/kernel/vsprintf.o ${BUILD}/kernel/printk.o ${BUILD}/kernel/gdt.o ${BUILD}/kernel/idt.o \
 	${BUILD}/kernel/asm/interrupt_handler.o ${BUILD}/kernel/traps.o ${BUILD}/kernel/chr_drv/keyboard.o ${BUILD}/kernel/exception.o \
 	${BUILD}/kernel/asm/clock_handler.o ${BUILD}/kernel/chr_drv/clock.o ${BUILD}/mm/memory.o ${BUILD}/kernel/kernel.o \
-	${BUILD}/mm/mm_101012.o ${BUILD}/kernel/task.o ${BUILD}/kernel/sched.o ${BUILD}/mm/malloc.o
+	${BUILD}/mm/mm_101012.o ${BUILD}/kernel/task.o ${BUILD}/kernel/sched.o ${BUILD}/mm/malloc.o ${BUILD}/kernel/asm/sched.o
 	ld -m elf_i386 $^ -o $@ -Ttext 0x1200
 
 ${BUILD}/mm/%.o: oskernel/mm/%.c

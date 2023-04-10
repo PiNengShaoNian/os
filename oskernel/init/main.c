@@ -22,14 +22,6 @@ void kernel_main(void) {
 
     sched();
 
-    // 测试分配虚拟内存
-    void *p = kmalloc(1);
-    printk("0x%p\n", p);
-
-    kfree_s(p, 1);
-
-    kmalloc(100);
-
     __asm__("sti;");
 
     while (true);
