@@ -63,9 +63,10 @@ void *idle(void *arg) {
     create_task("t1", t1_fun, 1);
 
     while (true) {
-        printk("#2 idle task running...\n");
+        printk("idle task running...\n");
 
-        sched();
+        __asm__ volatile ("sti;");
+        __asm__ volatile ("hlt;");
     }
 }
 

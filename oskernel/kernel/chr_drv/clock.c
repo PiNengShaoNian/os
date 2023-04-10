@@ -1,5 +1,8 @@
 #include "../../include/linux/kernel.h"
 #include "../../include/linux/traps.h"
+#include "../../include/asm/io.h"
+#include "../../include/linux/sched.h"
+#include "../../include/linux/task.h"
 
 // 定义PIT通道0、通道2和控制寄存器的地址
 #define PIT_CHAN0_REG 0X40
@@ -39,5 +42,7 @@ void clock_init() {
 void clock_handler(int idt_index) {
     send_eoi(idt_index);
 
-    printk("0x%x\n", idt_index);
+    cpu_tickes++;
+
+    do_timer();
 }

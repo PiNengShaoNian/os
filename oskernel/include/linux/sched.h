@@ -3,4 +3,6 @@
 
 void sched();
 
+void do_timer();
+
 #endif // OSKERNEL_SCHED_H
