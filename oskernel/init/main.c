@@ -3,7 +3,7 @@
 #include "../include/linux/traps.h"
 #include "../include/linux/mm.h"
 #include "../include/linux/task.h"
-#include "../include/unistd.h"
+#include "../include/stdio.h"
 #include "../include/string.h"
 
 extern void clock_init();
@@ -12,7 +12,7 @@ void user_mode() {
     int age = 10;
 
     char *str = "hello world!";
-    write(STDOUT_FILENO, str, strlen(str));
+    printf("%s, %d\n", str, 11);
 
     while(true);
 }
