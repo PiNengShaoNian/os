@@ -8,6 +8,7 @@
 #define STDERR_FILENO    2
 
 #define __NR_write 0
+#define __NR_exit	1
 
 #define _syscall0(type, name) \
   type name(void) \

@@ -4,7 +4,7 @@
 #include "../include/linux/mm.h"
 #include "../include/linux/task.h"
 #include "../include/stdio.h"
-#include "../include/string.h"
+#include "../include/stdlib.h"
 
 extern void clock_init();
 
@@ -14,7 +14,7 @@ void user_mode() {
     char *str = "hello world!";
     printf("%s, %d\n", str, 11);
 
-    while(true);
+    _exit(0);
 }
 
 void kernel_main(void) {
