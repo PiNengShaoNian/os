@@ -8,6 +8,7 @@
 extern void clock_init();
 
 void user_mode() {
+    __asm__("int 0x80;");
     int age = 10;
 
     while(true);

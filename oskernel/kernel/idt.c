@@ -14,6 +14,8 @@ extern void keymap_handler_entry();
 
 extern void clock_handler_entry();
 
+extern void system_call_entry();
+
 extern int interrupt_handler_table[0x2f];
 
 void idt_init() {
@@ -33,6 +35,9 @@ void idt_init() {
         if (i == 0x21) {
             handler = (int) keymap_handler_entry;
         }
+        if (i == 0x80) {
+            handler = (int) system_call_entry;
+        }
 
         p->offset0 = handler & 0xffff;
         p->offset1 = (handler >> 16) & 0xffff;
@@ -40,7 +45,7 @@ void idt_init() {
         p->reserved = 0;      // 保留不用
         p->type = 0b1110;     // 中断门
         p->segment = 0;       // 系统段
-        p->DPL = 0;           // 内核态
+        p->DPL = (i == 0x80) ? 3 : 0;           // 内核态
         p->present = 1;       // 有效
     }
 

@@ -4,6 +4,7 @@
 extern printk
 extern keymap_handler
 extern exception_handler
+extern system_call
 
 global interrupt_handler_entry
 interrupt_handler_entry:
@@ -19,6 +20,12 @@ keymap_handler_entry:
     push 0x21
     call keymap_handler
     add esp, 4
+
+    iret
+
+global system_call_entry
+system_call_entry:
+    call system_call
 
     iret
 
