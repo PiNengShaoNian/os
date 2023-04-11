@@ -7,6 +7,12 @@
 
 extern void clock_init();
 
+void user_mode() {
+    int age = 10;
+
+    while(true);
+}
+
 void kernel_main(void) {
     console_init();
     gdt_init();

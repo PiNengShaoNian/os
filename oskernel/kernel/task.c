@@ -4,6 +4,7 @@
 #include "../include/string.h"
 
 extern void sched_task();
+extern void move_to_user_mode();
 
 extern task_t *current;
 extern int jiffy;
@@ -38,57 +39,40 @@ task_t *create_task(char *name, task_fun_t fun, int priority) {
     memset(task, 0, PAGE_SIZE);
 
     task->task.pid = find_empty_process();
-    task->task.ppid = current == NULL ? 0 : current->pid;
+    task->task.ppid = (current == NULL) ? 0 : current->pid;
 
-    task->task.scheduling_times = 0;
     task->task.priority = priority;
     task->task.counter = priority;
+    task->task.scheduling_times = 0;
+
     strcpy(task->task.name, name);
 
+    // 加入tasks
     tasks[task->task.pid] = &(task->task);
 
-    task->task.tss.cr3 = (int) task + sizeof(task_t);
+    task->task.tss.cr3 = virtual_memory_init();
     task->task.tss.eip = fun;
 
     // r0 stack
-    task->task.esp0 = (int) task + PAGE_SIZE;
+    task->task.esp0 = (int)task + PAGE_SIZE;
     task->task.ebp0 = task->task.esp0;
 
     task->task.tss.esp0 = task->task.esp0;
+
+    // r3 stack
+    task->task.esp3 = kmalloc(4096) + PAGE_SIZE;
+    task->task.ebp3 = task->task.esp3;
+
+    task->task.tss.esp = task->task.esp3;
+    task->task.tss.ebp = task->task.ebp3;
 
     task->task.state = TASK_READY;
 
     return task;
 }
 
-void *t1_fun(void *arg) {
-    for (int i = 0; i < 0xffffffff; ++i) {
-        printk("t1: %d\n", i);
-
-        task_sleep(2000);
-    }
-}
-
-void *t2_fun(void *arg) {
-    for (int i = 0; i < 0xffffffff; ++i) {
-        printk("t2: %d\n", i);
-
-        task_sleep(1000);
-    }
-}
-
-void *t3_fun(void *arg) {
-    for (int i = 0; i < 0xffffffff; ++i) {
-        printk("t3: %d\n", i);
-
-        task_sleep(600);
-    }
-}
-
 void *idle(void *arg) {
-    create_task("t1", t1_fun, 1);
-    create_task("t2", t2_fun, 2);
-    create_task("t3", t3_fun, 3);
+    create_task("init", move_to_user_mode, 1);
 
     while (true) {
 //        printk("idle task running...\n");
@@ -183,4 +167,12 @@ void task_wakeup() {
             task->counter = task->priority;
         }
     }
+}
+
+int get_esp3(task_t *task) {
+    return task->esp3;
+}
+
+void set_esp3(task_t *task, int esp) {
+    task->tss.esp = esp;
 }
