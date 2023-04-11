@@ -4,7 +4,9 @@
 extern printk
 extern keymap_handler
 extern exception_handler
-extern system_call
+extern system_call_table
+
+extern current
 
 global interrupt_handler_entry
 interrupt_handler_entry:
@@ -25,7 +27,25 @@ keymap_handler_entry:
 
 global system_call_entry
 system_call_entry:
-    call system_call
+    mov esi, [current]
+
+    mov edi, [esp + 4 * 3]
+    mov [esi + 4 * 14], edi         ; 保存r3 esp
+
+    mov [esi + 4 * 15], ebp
+
+    push edx
+    push ecx
+    push ebx
+
+    call [system_call_table + eax * 4]
+
+    ; 恢复esp,前面压入了三个参数
+    add esp, 12
+
+    ; 恢复ebp
+    mov esi, [current]
+    mov ebp, [esi + 4 * 15]
 
     iret
 
