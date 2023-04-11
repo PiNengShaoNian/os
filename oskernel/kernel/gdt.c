@@ -1,6 +1,7 @@
 #include "../include/asm/system.h"
 #include "../include/linux/kernel.h"
 #include "../include/linux/traps.h"
+#include "../include/linux/task.h"
 #include "../include/string.h"
 
 #define GDT_SIZE 256
@@ -9,8 +10,13 @@ u64 gdt[GDT_SIZE] = {0};
 
 xdt_ptr_t gdt_ptr;
 
+int r0_code_selector = 1 << 3;
+int r0_data_selector = 2 << 3;
 int r3_code_selector;
 int r3_data_selector;
+int tss_selector;
+
+tss_t tss;
 
 static void r3_gdt_code_item(int gdt_index, int base, int limit) {
     // 在实模式时已经构建了4个全局描述符，所以从4开始
@@ -19,7 +25,7 @@ static void r3_gdt_code_item(int gdt_index, int base, int limit) {
         return;
     }
 
-    gdt_item_t* item = &gdt[gdt_index];
+    gdt_item_t *item = &gdt[gdt_index];
 
     item->limit_low = limit & 0xffff;
     item->base_low = base & 0xffffff;
@@ -42,7 +48,7 @@ static void r3_gdt_data_item(int gdt_index, int base, int limit) {
         return;
     }
 
-    gdt_item_t* item = &gdt[gdt_index];
+    gdt_item_t *item = &gdt[gdt_index];
 
     item->limit_low = limit & 0xffff;
     item->base_low = base & 0xffffff;
@@ -56,6 +62,32 @@ static void r3_gdt_data_item(int gdt_index, int base, int limit) {
     item->big = 1;
     item->granularity = 1;
     item->base_high = base >> 24 & 0xff;
+}
+
+void init_tss_item(int gdt_index, int base, int limit) {
+    printk("init tss...\n");
+
+    // TSS 是 x86 结构 CPU 的特定结构，被用来定义任务
+    // 使用 TSS 的唯一理由是为 0 级的任务提供栈，CPU 向更高特权级转移时所使用的栈地址，需要提前在 TSS 中写入。
+    tss.ss0 = r0_data_selector;
+    tss.esp0 = get_free_page() + PAGE_SIZE;
+    tss.iobase = sizeof(tss);
+
+    gdt_item_t *item = &gdt[gdt_index];
+
+    item->base_low = base & 0xffffff;
+    item->base_high = (base >> 24) & 0xff;
+    item->limit_low = limit & 0xffff;
+    item->limit_high = (limit >> 16) & 0xf;
+    item->segment = 0;     // 系统段
+    item->granularity = 0; // 字节
+    item->big = 0;         // 固定为 0
+    item->long_mode = 0;   // 固定为 0
+    item->present = 1;     // 在内存中
+    item->DPL = 0;         // 用于任务门或调用门
+    item->type = 0b1001;   // 32 位可用 tss
+
+    asm volatile("ltr ax;"::"a"(tss_selector));
 }
 
 void gdt_init() {
@@ -85,10 +117,13 @@ void gdt_init() {
     // 0b000000000000
     r3_code_selector = 4 << 3 | 0b011;
     r3_data_selector = 5 << 3 | 0b011;
+    tss_selector = 6 << 3;
 
     gdt_ptr.base = &gdt;
     // 这里要减1取[0,limit]而不是[0,limit)
     gdt_ptr.limit = sizeof(gdt) - 1;
 
     __asm__ volatile ("lgdt gdt_ptr;");
+
+    init_tss_item(6, &tss, sizeof(tss_t) - 1);
 }

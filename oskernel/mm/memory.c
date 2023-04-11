@@ -87,7 +87,7 @@ void *get_free_page() {
     }
 
     if (!find) {
-        printk("memory used up!");
+        printk("memory used up!\n");
         return NULL;
     }
 
