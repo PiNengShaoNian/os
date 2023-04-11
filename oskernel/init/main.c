@@ -13,8 +13,6 @@ void user_mode() {
 
     char *str = "hello world!";
     printf("%s, %d\n", str, 11);
-
-    _exit(0);
 }
 
 void kernel_main(void) {
