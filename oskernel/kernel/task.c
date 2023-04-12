@@ -4,6 +4,7 @@
 #include "../include/string.h"
 
 extern void sched_task();
+
 extern void move_to_user_mode();
 
 extern task_t *current;
@@ -54,7 +55,7 @@ task_t *create_task(char *name, task_fun_t fun, int priority) {
     task->task.tss.eip = fun;
 
     // r0 stack
-    task->task.esp0 = (int)task + PAGE_SIZE;
+    task->task.esp0 = (int) task + PAGE_SIZE;
     task->task.ebp0 = task->task.esp0;
 
     task->task.tss.esp0 = task->task.esp0;
@@ -65,6 +66,63 @@ task_t *create_task(char *name, task_fun_t fun, int priority) {
 
     task->task.tss.esp = task->task.esp3;
     task->task.tss.ebp = task->task.ebp3;
+
+    task->task.state = TASK_READY;
+
+    return task;
+}
+
+task_t *create_child(char *name, task_fun_t fun, int priority) {
+    if (current == NULL) {
+        printk("[%s:%d] current task is null\n", __FILE__, __LINE__);
+        return NULL;
+    }
+
+    task_union_t *task = (task_union_t *) kmalloc(PAGE_SIZE);
+    memset(task, 0, PAGE_SIZE);
+
+    // 拷贝父进程的内存空间
+    memcpy(task, current, PAGE_SIZE);
+
+    // 设置个性化数据
+    task->task.pid = find_empty_process();
+
+    task->task.ppid = (current == NULL) ? 0 : current->pid;
+
+    task->task.priority = priority;
+    task->task.counter = priority;
+    task->task.scheduling_times = 0;
+
+    strcpy(task->task.name, name);
+
+    // 加入tasks
+    tasks[task->task.pid] = &(task->task);
+
+    task->task.tss.cr3 = (int) task + sizeof(task_t);
+    task->task.tss.eip = fun;
+
+    // r0 stack
+    task->task.esp0 = (int) task + PAGE_SIZE;
+    task->task.ebp0 = task->task.esp0;
+
+    task->task.tss.esp0 = task->task.esp0;
+
+    // r3 stack
+    task->task.esp3 = kmalloc(4096) + PAGE_SIZE;
+    task->task.ebp3 = task->task.esp3;
+
+    task->task.tss.esp = task->task.esp3;
+    task->task.tss.ebp = task->task.ebp3;
+
+    // 将父进程r3 stack拷贝到子进程r3 stack
+    memcpy(task->task.esp3 - PAGE_SIZE, current->esp3 - PAGE_SIZE, PAGE_SIZE);
+
+    // 计算子进程的esp
+    int parent_esp_used = current->esp3 - current->tss.esp;
+    int parent_ebp_used = current->ebp3 - current->tss.ebp;
+
+    task->task.tss.esp -= parent_esp_used;
+    task->task.tss.ebp -= parent_ebp_used;
 
     task->task.state = TASK_READY;
 
@@ -112,7 +170,8 @@ void task_exit(int code, task_t *task) {
 
             current = NULL;
 
-            kfree_s(tmp, 4096);
+            kfree_s(tmp->esp3 - PAGE_SIZE, PAGE_SIZE);
+            kfree_s(tmp, PAGE_SIZE);
 
             break;
         }
@@ -132,6 +191,9 @@ void current_task_exit(int code) {
             tasks[i] = NULL;
 
             current = NULL;
+
+            kfree_s(tmp->esp3 - PAGE_SIZE, PAGE_SIZE);
+            kfree_s(tmp, PAGE_SIZE);
 
             break;
         }

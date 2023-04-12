@@ -8,7 +8,11 @@
 #define STDERR_FILENO    2
 
 #define __NR_write 0
-#define __NR_exit	1
+#define __NR_exit    1
+#define __NR_fork    2
+#define __NR_get_pid    3
+#define __NR_get_ppid   4
+
 
 #define _syscall0(type, name) \
   type name(void) \
@@ -64,6 +68,13 @@ return -1; \
 
 extern int errno;
 
-int write(int fildes, const char * buf, int count);
+int write(int fildes, const char *buf, int count);
+
+pid_t fork();
+
+pid_t getpid();
+
+pid_t getppid();
+
 
 #endif // OSKERNEL_UNISTD_H

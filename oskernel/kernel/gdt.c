@@ -70,7 +70,7 @@ void init_tss_item(int gdt_index, int base, int limit) {
     // TSS 是 x86 结构 CPU 的特定结构，被用来定义任务
     // 使用 TSS 的唯一理由是为 0 级的任务提供栈，CPU 向更高特权级转移时所使用的栈地址，需要提前在 TSS 中写入。
     tss.ss0 = r0_data_selector;
-    tss.esp0 = get_free_page() + PAGE_SIZE;
+    tss.esp0 = kmalloc(4096) + PAGE_SIZE;
     tss.iobase = sizeof(tss);
 
     gdt_item_t *item = &gdt[gdt_index];

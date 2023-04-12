@@ -25,6 +25,10 @@ keymap_handler_entry:
 
     iret
 
+; eax = 调用号
+; ebx = 第一个参数
+; ecx = 第二个参数
+; edx = 第三个参数
 global system_call_entry
 system_call_entry:
     mov esi, [current]
