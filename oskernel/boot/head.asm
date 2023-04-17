@@ -43,7 +43,7 @@ _start:
 
     ; 屏蔽从芯片所有中断响应
 .disable_8259a_slave:
-    mov al, 11111111b
+    mov al, 00111111b
     out 0A1h, al
 
     ; 调用c程序

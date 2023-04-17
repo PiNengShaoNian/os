@@ -14,6 +14,8 @@ extern void keymap_handler_entry();
 
 extern void clock_handler_entry();
 
+extern void hd_handler_entry();
+
 extern void system_call_entry();
 
 extern int interrupt_handler_table[0x2f];
@@ -34,6 +36,9 @@ void idt_init() {
         }
         if (i == 0x21) {
             handler = (int) keymap_handler_entry;
+        }
+        if (i == 0x2e) {
+            handler = (int) hd_handler_entry;
         }
         if (i == 0x80) {
             handler = (int) system_call_entry;
