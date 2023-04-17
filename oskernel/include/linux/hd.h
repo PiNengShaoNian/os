@@ -1,6 +1,8 @@
 #ifndef OS_IDE_H
 #define OS_IDE_H
 
+#include "./kernel.h"
+
 /* Hd controller regs. Ref: IBM AT Bios-listing */
 #define HD_DATA        0x1f0    /* _CTL when writing */
 #define HD_ERROR       0x1f1    /* see err-bits */
@@ -43,6 +45,39 @@
 #define ID_ERR            0x10    /* ? */
 #define ECC_ERR           0x40    /* ? */
 #define    BBD_ERR        0x80    /* ? */
+
+// insw指令从DX寄存器中指定的端口读取一个字（16位），并将其复制到ES:DI指向的内存地址中。然后，DI寄存器自动增加2，CX寄存器减1。如果CX寄存器的值为0，则输入字符串操作结束。
+// 需要注意的是，insw指令需要使用rep指令结合使用，以便可以重复执行输入操作。通常情况下，insw指令用于读取设备I/O端口中的数据，并将其存储在内存中。
+// 另外，insw指令需要确保指定的端口中存在有效数据。如果端口中没有有效数据，则会发生阻塞等待的情况，这可能会导致程序陷入死循环。因此，在使用insw指令之前，需要确保端口中存在有效数据。
+#define port_read(port, buf, nr) \
+__asm__("cld;rep;insw"::"d" (port),"D" (buf),"c" (nr))
+
+#define port_write(port, buf, nr) \
+__asm__("cld;rep;outsw"::"d" (port),"S" (buf),"c" (nr))
+
+typedef struct _hd_partition_t {
+
+} __attribute__((packed)) hd_partition_t;
+
+typedef struct _hd_channel_t hd_channel_t;
+
+typedef struct _hd_t {
+    u8 dev_no;
+    u8 is_master;      // 是否是主设备 1是 0否
+    hd_partition_t partition[4];   // 暂不考虑逻辑分区
+    hd_channel_t *channel;
+
+    // 数据来源：硬盘identify命令返回的结果
+    char number[10 * 2 + 1];    // 硬盘序列号    最后一个字节是补字符串结束符0用的,从硬盘读取的是没有结束符的
+    char model[20 * 2 + 1];     // 硬盘型号
+    int sectors;                // 扇区数 一个扇区512字节
+} __attribute__((packed)) hd_t;
+
+typedef struct _hd_channel_t {
+    hd_t    hd[2];      // index=0为主设备，index=1为从设备
+    u16     port_base;  // 通过哪个端口操作该通道 通道1对应的端口0x1f0-0x1f7,控制寄存器端口0x3f6.通道1对应的端口号0x170-0x177,控制寄存器端口0x376
+    u8      irq_no;     // 该通道触发的中断由哪个中断程序处理
+} __attribute__((packed)) hd_channel_t;
 
 typedef void (*dev_handler_fun_t)(void);
 
