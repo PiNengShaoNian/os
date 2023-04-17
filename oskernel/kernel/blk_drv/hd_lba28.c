@@ -9,6 +9,9 @@ extern task_t *wait_for_request;
 
 dev_handler_fun_t dev_interrupt_handler;
 
+// 根据此参数的值来决定硬盘中断的处理逻辑
+bool dev_handler_fast = false;
+
 /**
  * 获取发送硬盘操作请求后硬盘的状态
  * 准备就绪返回0，否则返回错误寄存器中存储的值
