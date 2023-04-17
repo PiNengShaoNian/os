@@ -84,7 +84,7 @@ task_t *find_ready_task() {
 
 void sched() {
     if (current != NULL) {
-        if (current->state != TASK_SLEEPING) {
+        if (current->state != TASK_SLEEPING && current->state != TASK_BLOCKED) {
             current->state = TASK_READY;
         }
 
@@ -101,11 +101,11 @@ void sched() {
 }
 
 void do_timer() {
-    if(current == NULL) {
+    if (current == NULL) {
         sched();
     }
 
-    if(current != NULL && (current->counter > 0)) {
+    if (current != NULL && (current->counter > 0)) {
         current->counter--;
         return;
     }

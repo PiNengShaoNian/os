@@ -1,8 +1,11 @@
 #include "../../include/linux/hd.h"
 #include "../../include/linux/kernel.h"
+#include "../../include/linux/task.h"
 #include "../../include/string.h"
 #include "../../include/asm/io.h"
 #include "../../include/assert.h"
+
+extern task_t *wait_for_request;
 
 dev_handler_fun_t dev_interrupt_handler;
 
@@ -32,6 +35,12 @@ static void print_disk_info(hd_t info) {
     printk("Drive model: %s\n", info.model);
     printk("Hard disk size: %d sectors, %d M\n", info.sectors, info.sectors * 512 / 1024 / 1024);
     printk("===== Hard Disk Info End =====\n");
+}
+
+void read_intr() {
+    printk("[%s:%d]run...\n", __FUNCTION__, __LINE__);
+
+    task_unblock(wait_for_request);
 }
 
 void do_identify() {
@@ -66,10 +75,10 @@ void hd_out() {
     char hd = 0;
     int from = 0;
     int count = 1;
-    unsigned int cmd = 0xec;
+    unsigned int cmd = WIN_READ;
 
     // 这个得放在向硬盘发起请求的前面，否则中断例程中用的时候是没值的
-    dev_interrupt_handler = do_identify;
+    dev_interrupt_handler = read_intr;
 
     out_byte(HD_NSECTOR, count);
     out_byte(HD_SECTOR, from & 0xFF);

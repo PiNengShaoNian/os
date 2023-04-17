@@ -65,6 +65,9 @@ typedef struct task_t {
     int ebp0;
     int esp3;
     int ebp3;
+    // 读硬盘的时候，有可能先阻塞任务再进入硬盘中断，这是正常情况，这个属性用不上
+    // 还有一种情况就是还未阻塞任务就进入了硬盘中断，所以需要这个属性来判断
+    bool resume_from_irq;
     int magic;
 } task_t;
 
@@ -97,5 +100,13 @@ task_t *create_child(char *name, task_fun_t fun, int priority);
 int get_esp3(task_t *task);
 
 void set_esp3(task_t *task, int esp);
+
+void task_block(task_t *task);
+
+void task_unblock(task_t *task);
+
+void set_block(task_t *task);
+
+bool is_blocked(task_t *task);
 
 #endif // OSKERNEL_TASK_H

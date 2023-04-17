@@ -99,7 +99,7 @@ task_t *create_child(char *name, task_fun_t fun, int priority) {
     tasks[task->task.pid] = &(task->task);
 
     task->task.tss.cr3 = (int) task + sizeof(task_t);
-    task->task.tss.eip = (u32)fun;
+    task->task.tss.eip = (u32) fun;
 
     // r0 stack
     task->task.esp0 = (int) task + PAGE_SIZE;
@@ -237,4 +237,36 @@ int get_esp3(task_t *task) {
 
 void set_esp3(task_t *task, int esp) {
     task->tss.esp = esp;
+}
+
+void task_block(task_t *task) {
+    if (task->resume_from_irq == true) {
+        task->resume_from_irq = false;
+        return;
+    }
+
+    task->state = TASK_BLOCKED;
+
+    sched_task();
+}
+
+void task_unblock(task_t *task) {
+    if (task->state != TASK_BLOCKED) {
+        printk("[%s]task state: %d\n", __FUNCTION__, task->state);
+
+        task->resume_from_irq = true;
+        return;
+    }
+
+    task->state = TASK_READY;
+
+    sched_task();
+}
+
+void set_block(task_t *task) {
+    task->state = TASK_BLOCKED;
+}
+
+bool is_blocked(task_t *task) {
+    return task->state == TASK_BLOCKED;
 }
