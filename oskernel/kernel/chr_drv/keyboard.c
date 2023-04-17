@@ -2,6 +2,7 @@
 #include "../../include/asm/io.h"
 #include "../../include/linux/types.h"
 #include "../../include/linux/traps.h"
+#include "../../include/shell.h"
 
 #define INV 0 // 不可见字符
 #define CODE_PRINT_SCREEN_DOWN 0xB7
@@ -402,4 +403,17 @@ void keymap_handler(int idt_index) {
         return;
 
     printk("%c", ch);
+
+    // shell相关
+    if(ch == 10) { // enter
+        exec_command_shell();
+        return;
+    }
+
+    if(ch == 8) { // backspace
+        del_char_shell();
+        return;
+    }
+
+    put_char_shell(ch);
 }

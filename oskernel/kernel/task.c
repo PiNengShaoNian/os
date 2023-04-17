@@ -5,7 +5,7 @@
 
 extern void sched_task();
 
-extern void move_to_user_mode();
+extern void kernel_thread_fun(void *arg);
 
 extern task_t *current;
 extern int jiffy;
@@ -52,7 +52,7 @@ task_t *create_task(char *name, task_fun_t fun, int priority) {
     tasks[task->task.pid] = &(task->task);
 
     task->task.tss.cr3 = virtual_memory_init();
-    task->task.tss.eip = fun;
+    task->task.tss.eip = (u32) fun;
 
     // r0 stack
     task->task.esp0 = (int) task + PAGE_SIZE;
@@ -99,7 +99,7 @@ task_t *create_child(char *name, task_fun_t fun, int priority) {
     tasks[task->task.pid] = &(task->task);
 
     task->task.tss.cr3 = (int) task + sizeof(task_t);
-    task->task.tss.eip = fun;
+    task->task.tss.eip = (u32)fun;
 
     // r0 stack
     task->task.esp0 = (int) task + PAGE_SIZE;
@@ -130,7 +130,7 @@ task_t *create_child(char *name, task_fun_t fun, int priority) {
 }
 
 void *idle(void *arg) {
-    create_task("init", move_to_user_mode, 1);
+    create_task("init", kernel_thread_fun, 1);
 
     while (true) {
 //        printk("idle task running...\n");
