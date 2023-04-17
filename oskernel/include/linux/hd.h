@@ -44,6 +44,10 @@
 #define ECC_ERR           0x40    /* ? */
 #define    BBD_ERR        0x80    /* ? */
 
+typedef void (*dev_handler_fun_t)(void);
+
 void hd_init();
+
+void hd_out();
 
 #endif // OS_IDE_H

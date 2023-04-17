@@ -20,15 +20,5 @@ void hd_init() {
 
     _hd_init();
 
-    char hd = 0;
-    int from = 0;
-    int count = 1;
-    unsigned int cmd = 0xec;
-
-    out_byte(HD_NSECTOR, count);
-    out_byte(HD_SECTOR, from & 0xFF);
-    out_byte(HD_LCYL, from >> 8 & 0xFF);
-    out_byte(HD_HCYL, from >> 16 & 0xFF);
-    out_byte(HD_CURRENT, 0b11100000 | (hd << 4) | (from >> 24 & 0xf));
-    out_byte(HD_COMMAND, cmd);
+    hd_out();
 }
