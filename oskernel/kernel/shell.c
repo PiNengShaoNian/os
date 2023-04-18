@@ -1,4 +1,6 @@
 #include "../include/linux/kernel.h"
+#include "../include/linux/hd.h"
+#include "../include/linux/fs.h"
 #include "../include/shell.h"
 #include "../include/string.h"
 #include "../include/assert.h"
@@ -37,12 +39,24 @@ void put_char_shell(char ch) {
 void exec_command_shell() {
     if (!g_active_shell) return;
 
-    printk("start exec: %s\n", g_shell_command);
+//    printk("start exec: %s\n", g_shell_command);
 
     if (!strcmp("1", g_shell_command)) {
         printk("run 1\n");
     } else if (!strcmp("print_super_block", g_shell_command)) {
         print_super_block();
+    } else if (!strcmp("print_block_bitmap", g_shell_command)) {
+        print_block_bitmap();
+    } else if (!strcmp("reset_block_bitmap", g_shell_command)) {
+        reset_block_bitmap();
+    } else if (!strcmp("print_inode_bitmap", g_shell_command)) {
+        print_inode_bitmap();
+    } else if (!strcmp("reset_inode_bitmap", g_shell_command)) {
+        reset_inode_bitmap();
+    } else if (!strcmp("reset_bitmap", g_shell_command)) {
+        reset_bitmap();
+    } else if (!strcmp("print_bitmap", g_shell_command)) {
+        print_bitmap();
     }
 
     g_shell_command_off = 0;

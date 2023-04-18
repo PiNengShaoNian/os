@@ -346,3 +346,91 @@ void print_super_block() {
     printk("root lba: %d\n", g_active_super_block->root_lba);
     printk("data start lba: %d\n", g_active_super_block->data_start_lba);
 }
+
+void print_block_bitmap() {
+    printk("print block bitmap\n");
+
+    assert(g_active_super_block != NULL);
+
+    printk("block bitmap lba: %d\n", g_active_super_block->block_bitmap_lba);
+    printk("block bitmap sectors: %d\n", g_active_super_block->block_bitmap_sects);
+
+    printk("[mm]block bitmap: ");
+    for (int i = 0; i < 10; ++i) {
+        printk("0x%02x ", block_bitmap_buf[i]);
+    }
+    printk("\n");
+
+    buffer_head_t *bh = bread(g_active_hd->dev_no, g_active_super_block->block_bitmap_lba, 1);
+    printk("[hd]block bitmap: ");
+    for (int i = 0; i < 10; ++i) {
+        printk("0x%02x ", bh->data[i]);
+    }
+    printk("\n");
+
+    kfree_s(bh->data, 512);
+    kfree_s(bh, sizeof(buffer_head_t));
+}
+
+void reset_block_bitmap() {
+    printk("reset block bitmap\n");
+
+    // 将内存中的全置为0
+    memset(block_bitmap_buf, 0, 512);
+
+    // 根目录数据区占用数据区第一个扇区
+    block_bitmap_buf[0] = 1;
+
+    // 写入硬盘
+    int write_size = bwrite(g_active_hd->dev_no, g_active_super_block->block_bitmap_lba, block_bitmap_buf, 512);
+    assert(write_size != -1);
+}
+
+void print_inode_bitmap() {
+    printk("print inode bitmap\n");
+
+    assert(g_active_super_block != NULL);
+
+    printk("inode bitmap lba: %d\n", g_active_super_block->inode_bitmap_lba);
+    printk("inode bitmap sectors: %d\n", g_active_super_block->inode_bitmap_sects);
+
+    printk("[mm]inode bitmap: ");
+    for (int i = 0; i < 10; ++i) {
+        printk("0x%02x ", inode_bitmap_buf[i]);
+    }
+    printk("\n");
+
+    buffer_head_t *bh = bread(g_active_hd->dev_no, g_active_super_block->inode_bitmap_lba, 1);
+    printk("[hd]inode bitmap: ");
+    for (int i = 0; i < 10; ++i) {
+        printk("0x%02x ", bh->data[i]);
+    }
+    printk("\n");
+
+    kfree_s(bh->data, 512);
+    kfree_s(bh, sizeof(buffer_head_t));
+}
+
+void reset_inode_bitmap() {
+    printk("reset inode bitmap\n");
+
+    // 将内存中的全置为0
+    memset(inode_bitmap_buf, 0, 512);
+
+    // inode表第一个数据项是根目录的
+    inode_bitmap_buf[0] = 1;
+
+    // 写入硬盘
+    int write_size = bwrite(g_active_hd->dev_no, g_active_super_block->inode_bitmap_lba, inode_bitmap_buf, 512);
+    assert(write_size != -1);
+}
+
+void print_bitmap() {
+    print_block_bitmap();
+    print_inode_bitmap();
+}
+
+void reset_bitmap() {
+    reset_block_bitmap();
+    reset_inode_bitmap();
+}

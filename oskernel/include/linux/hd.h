@@ -140,4 +140,16 @@ void unmount_partition();
 
 void print_super_block();
 
+void print_block_bitmap();
+
+void reset_block_bitmap();
+
+void print_inode_bitmap();
+
+void reset_inode_bitmap();
+
+void print_bitmap();
+
+void reset_bitmap();
+
 #endif // OS_IDE_H

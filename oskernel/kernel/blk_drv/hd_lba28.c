@@ -21,7 +21,7 @@ bool dev_handler_fast = false;
 static int win_result() {
     int i = in_byte(HD_STATUS);
 
-    printk("[%s:%d]hd status: 0x%x\n", __FUNCTION__, __LINE__, i);
+//    printk("[%s:%d]hd status: 0x%x\n", __FUNCTION__, __LINE__, i);
 
     if ((i & (BUSY_STAT | READY_STAT | WRERR_STAT | SEEK_STAT | ERR_STAT))
         == (READY_STAT | SEEK_STAT))
@@ -72,7 +72,7 @@ void print_disk_info(hd_t *info) {
 }
 
 void read_intr() {
-    printk("[%s:%d]run...\n", __FUNCTION__, __LINE__);
+//    printk("[%s:%d]run...\n", __FUNCTION__, __LINE__);
 
     int status;
     if ((status = win_result()) != 0) {
@@ -93,7 +93,7 @@ void write_intr() {
 }
 
 void do_identify() {
-    printk("[%s:%d]run...\n", __FUNCTION__, __LINE__);
+//    printk("[%s:%d]run...\n", __FUNCTION__, __LINE__);
 
     int status = 0;
     if ((status = win_result()) != 0) {

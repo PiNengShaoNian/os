@@ -96,7 +96,7 @@ void *get_free_page() {
 
     void *ret = (void *) (g_physics_memory_map.addr_base + (i << 12));
 
-    printk("[%s]return: 0x%X, used: %d pages\n", __FUNCTION__, ret, g_physics_memory_map.bitmap_item_used);
+//    printk("[%s]return: 0x%X, used: %d pages\n", __FUNCTION__, ret, g_physics_memory_map.bitmap_item_used);
 
     return ret;
 }
@@ -111,5 +111,5 @@ void free_page(void *p) {
 
     g_physics_memory_map.map[index] = 0;
     g_physics_memory_map.bitmap_item_used--;
-    printk("[%s]return: 0x%X, used: %d pages\n", __FUNCTION__, p, g_physics_memory_map.bitmap_item_used);
+//    printk("[%s]return: 0x%X, used: %d pages\n", __FUNCTION__, p, g_physics_memory_map.bitmap_item_used);
 }
