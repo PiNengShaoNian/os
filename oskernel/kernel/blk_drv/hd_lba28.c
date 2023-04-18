@@ -63,7 +63,7 @@ hd_t *get_hd_info(u8 dev) {
     return hd;
 }
 
-void print_disk_info(hd_t* info) {
+void print_disk_info(hd_t *info) {
     printk("===== Hard Disk Info Start =====\n");
     printk("Hard disk Serial number: %s\n", info->dev_no);
     printk("Drive model: %s\n", info->model);
@@ -74,7 +74,20 @@ void print_disk_info(hd_t* info) {
 void read_intr() {
     printk("[%s:%d]run...\n", __FUNCTION__, __LINE__);
 
+    int status;
+    if ((status = win_result()) != 0) {
+        panic("identify disk error: %d\n", status);
+    }
+
     port_read(HD_DATA, g_hd_request.buffer, 512 * g_hd_request.nr_sectors / 2);
+
+    task_unblock(wait_for_request);
+}
+
+void write_intr() {
+    if ((g_hd_request.bh->handler_state = win_result()) != 0) {
+        panic("write disk error: %d\n", g_hd_request.bh->handler_state);
+    }
 
     task_unblock(wait_for_request);
 }
@@ -112,6 +125,16 @@ void do_hd_request() {
             hd_out(g_hd_request.dev, g_hd_request.sector, g_hd_request.nr_sectors, WIN_READ, read_intr);
             break;
         case WRITE:
+            hd_out(g_hd_request.dev, g_hd_request.sector, g_hd_request.nr_sectors, WIN_WRITE, write_intr);
+
+            // 检测硬盘是否已准备好写操作
+            int r = 0;
+            for (int i = 0; i < 3000 && !(r = in_byte(HD_STATUS) & DRQ_STAT); i++);
+            if (!r) {
+                panic("Failed to write to the hard disk");
+            }
+
+            port_write(HD_DATA, g_hd_request.buffer, 256);
             break;
         case CHECK:
             dev_handler_fast = true;

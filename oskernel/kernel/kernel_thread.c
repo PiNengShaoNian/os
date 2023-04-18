@@ -11,11 +11,14 @@ task_t *wait_for_request = NULL;
 void kernel_thread_fun(void *arg) {
     hd_init();
 
-    hd_t *hd = get_hd_info(0);
+    char str[512] = "hello world!";
+    bwrite(1, 0, str, 512);
 
     // 打印硬盘信息
-    print_disk_info(hd);
-    kfree_s(hd, sizeof(hd_t));
+    buffer_head_t *buff1 = bread(1, 0, 1);
+    printk("%s\n", buff1->data);
+    kfree_s(buff1->data, 512);
+    kfree_s(buff1, sizeof(buffer_head_t));
 
     active_shell();
 

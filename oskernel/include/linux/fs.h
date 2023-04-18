@@ -14,6 +14,7 @@ typedef struct _buffer_head_t {
     u8 dev;            // 读哪块硬盘
     uint sector_from;    // 从哪个扇区开始读
     uint sector_count;   // 读几个扇区
+    u8 handler_state;       // 读写硬盘的结果
 } __attribute__((packed)) buffer_head_t;
 
 typedef struct _hd_request_t {
@@ -23,8 +24,8 @@ typedef struct _hd_request_t {
     unsigned long sector;           // 从哪个扇区开始读
     unsigned long nr_sectors;       // 读多少扇区
     char *buffer;
-    struct buffer_head_t *bh;
-    struct request *next;
+    struct _buffer_head_t *bh;
+    struct _hd_request_t *next;
 } __attribute__((packed)) hd_request_t;
 
 void ll_rw_block(int rw, buffer_head_t *bh);
@@ -38,6 +39,6 @@ void ll_rw_block(int rw, buffer_head_t *bh);
  */
 buffer_head_t *bread(int dev, int from, int count);
 
-size_t bwrite(int dev, int block, buffer_head_t *bh);
+size_t bwrite(int dev, int from, char *buff, int size);
 
 #endif // OS_FS_H

@@ -27,3 +27,27 @@ buffer_head_t *bread(int dev, int from, int count) {
 
     return bh;
 }
+
+size_t bwrite(int dev, int from, char *buff, int size) {
+    buffer_head_t *bh = kmalloc(sizeof(buffer_head_t));
+
+    if (size > 512) {
+        panic("The upper limit of a single write is 512");
+    }
+
+    bh->data = buff;
+    bh->dev = dev;
+    bh->sector_from = from;
+    bh->sector_count = 1;
+
+    ll_rw_block(WRITE, bh);
+
+    // 阻塞等待读盘结束,由中断程序唤醒
+    wait_for_request = current;
+    task_block(current);
+
+    int handler_state = bh->handler_state;
+    kfree_s(bh, sizeof(buffer_head_t));
+
+    return handler_state == 0 ? size : -1;
+}
