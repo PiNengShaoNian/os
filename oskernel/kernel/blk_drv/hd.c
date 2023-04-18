@@ -119,3 +119,15 @@ void init_active_hd_info(u8 dev) {
     kfree_s(bh->data, 512);
     kfree_s(bh, sizeof(buffer_head_t));
 }
+
+void init_active_hd_partition() {
+    // 读取hdb盘的MBR扇区
+    buffer_head_t *buff = bread(g_active_hd->dev_no, 0, 1);
+
+    // 赋值硬盘分区信息
+    mbr_sector_t *mbr_sector = buff->data;
+    memcpy(g_active_hd->partition, mbr_sector->partition, 64);
+
+    kfree_s(buff->data, 512);
+    kfree_s(buff, sizeof(buff));
+}

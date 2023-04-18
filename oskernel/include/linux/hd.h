@@ -56,8 +56,23 @@ __asm__("cld;rep;insw"::"d" (port),"D" (buf),"c" (nr))
 __asm__("cld;rep;outsw"::"d" (port),"S" (buf),"c" (nr))
 
 typedef struct _hd_partition_t {
-
+    unsigned char boot_ind;        /* 0x80 - active (unused) */
+    unsigned char head;        /* ? */
+    unsigned char sector;        /* ? */
+    unsigned char cyl;        /* ? */
+    unsigned char sys_ind;        /* ? */
+    unsigned char end_head;        /* ? */
+    unsigned char end_sector;    /* ? */
+    unsigned char end_cyl;        /* ? */
+    unsigned int start_sect;    /* starting sector counting from 0 */
+    unsigned int nr_sects;        /* nr of sectors in partition */
 } __attribute__((packed)) hd_partition_t;
+
+typedef struct _mbr_sector_t {
+    u8 code[446];
+    hd_partition_t partition[4];
+    u16 magic;
+} __attribute__((packed)) mbr_sector_t;
 
 typedef struct _hd_channel_t hd_channel_t;
 
@@ -90,5 +105,7 @@ hd_t *get_hd_info(u8 dev);
 void print_disk_info(hd_t *info);
 
 void init_active_hd_info(u8 dev);
+
+void init_active_hd_partition();
 
 #endif // OS_IDE_H

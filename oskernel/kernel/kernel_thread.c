@@ -5,7 +5,7 @@
 #include "../include/shell.h"
 
 extern task_t *current;
-extern hd_t* g_active_hd;
+extern hd_t *g_active_hd;
 
 task_t *wait_for_request = NULL;
 
@@ -14,7 +14,7 @@ void kernel_thread_fun(void *arg) {
 
     // 获取hdb盘的信息
     init_active_hd_info(g_active_hd->dev_no);
-    print_disk_info(g_active_hd);
+    init_active_hd_partition();
 
     active_shell();
 
