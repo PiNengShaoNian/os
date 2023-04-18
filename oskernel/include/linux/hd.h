@@ -108,4 +108,34 @@ void init_active_hd_info(u8 dev);
 
 void init_active_hd_partition();
 
+typedef enum _fs_type_t {
+    EXT = 1,
+    FAT32,
+    NTFS,
+} fs_type_t;
+
+typedef struct _super_block_t {
+    fs_type_t type;       // 这个值不能为0,好多地方都以这个地方是否为0做判断
+    u32 lba_base;           // 本分区起始lba
+    u32 sector_count;       // 本分区共有多少扇区
+    u32 inode_count;        // 本分区中共有inode数量
+    u32 data_start_lba;     // 数据区开始的第一个扇区号
+    u32 root_lba;           // 根目录所在的扇区
+
+    u32 block_bitmap_lba;   // 块位图本身起始扇区地址
+    u32 block_bitmap_sects; // 块位图占用的山区数量
+
+    u32 inode_bitmap_lba;   // inode位图起始扇区 lba 地址
+    u32 inode_bitmap_sects; // inode位图占用的扇区数量
+
+    u32 inode_table_lba;    // inode数组起始扇区 lba 地址
+    u32 inode_table_sects;  // inode数组占用的扇区数量
+
+    char padding[512 - 48];
+} __attribute__((packed)) super_block_t;
+
+void mount_partition(super_block_t *block);
+
+void unmount_partition();
+
 #endif // OS_IDE_H

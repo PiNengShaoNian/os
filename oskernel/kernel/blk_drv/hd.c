@@ -2,8 +2,15 @@
 #include "../../include/linux/fs.h"
 #include "../../include/linux/mm.h"
 #include "../../include/linux/kernel.h"
+#include "../../include/linux/bitmap.h"
 #include "../../include/string.h"
+#include "../../include/assert.h"
 #include "../../include/asm/io.h"
+
+// 不考虑扩展分区
+#define HD_PARTITION_MAX    4
+
+#define SUPER_BLOCK_MAX     16
 
 // BIOS例程会将检测到的硬盘数量写在内存0x475位置（注意：0x475为物理地址，如果开启分页映射方式不对可能读不到）
 #define HD_NUMBER_MEMORY_PTR    0x475
@@ -19,6 +26,20 @@ uint g_hd_number = 0;
 
 // 活跃的硬盘。后面的文件系统就针对这个盘做操作，先只设置一个盘
 hd_t *g_active_hd = NULL;
+
+// 所有硬盘的所有分区都存这里
+super_block_t g_super_block[SUPER_BLOCK_MAX];
+
+// 活动分区（挂载分区、卸载分区，操作的就是这个
+super_block_t *g_active_super_block;
+
+// 空闲块位图
+char block_bitmap_buf[512] = {0};
+bitmap_t block_bitmap;
+
+// inode节点位图
+char inode_bitmap_buf[512] = {0};
+bitmap_t inode_bitmap;
 
 static void _ide_channel_init() {
     for (int i = 0; i < IDE_CHANNEL_NUMBER; ++i) {
@@ -130,4 +151,95 @@ void init_active_hd_partition() {
 
     kfree_s(buff->data, 512);
     kfree_s(buff, sizeof(buff));
+}
+
+static super_block_t *find_empty_super_block() {
+    for (int i = 0; i < SUPER_BLOCK_MAX; ++i) {
+        if (g_super_block[i].type == 0) {
+            return &g_super_block[i];
+        }
+    }
+
+    panic("No superblock is available");
+}
+
+void init_super_block() {
+    assert(g_active_hd != NULL);
+
+    printk("===== start: init super block =====\n");
+
+    for (int i = 0; i < HD_PARTITION_MAX; ++i) {
+        hd_partition_t *partition = &g_active_hd->partition[i];
+
+        if (partition->start_sect == 0) {
+            printk("[init super block]hd partition %d is null! pass..\n", i);
+
+            continue;
+        }
+
+        super_block_t *super_block = find_empty_super_block();
+        super_block->type = EXT;
+        super_block->lba_base = partition->start_sect;
+        super_block->sector_count = partition->nr_sects;
+
+        // 计算存放空闲块位图需要几个扇区（一个扇区512B，可以映射512 × 8 = 4096个扇区
+        int save_free_sector_bitmap_sector = partition->nr_sects / (512 * 8);
+        save_free_sector_bitmap_sector += (partition->nr_sects % (512 * 8) == 0) ? 0 : 1;
+
+        // 这个值是算出来的。当然只是一个估算值，在创建inode节点的时候还是要判断有没有扇区可用
+        // 第一个+1表示第一个扇区固定用于存放OS启动代码
+        // 第二个+1表示存放超级块数据
+        super_block->block_bitmap_sects = save_free_sector_bitmap_sector;
+        super_block->block_bitmap_lba = partition->start_sect + 1 + 1;
+
+        super_block->inode_count = 4096;
+        super_block->inode_bitmap_lba = super_block->block_bitmap_lba + super_block->block_bitmap_sects;
+        super_block->inode_bitmap_sects = 1;
+
+        // inode数组
+        super_block->inode_table_lba = super_block->inode_bitmap_lba + super_block->inode_bitmap_sects;
+
+        // 计算存放inode数组需要多少扇区
+        super_block->inode_table_sects = super_block->inode_count * sizeof(d_inode_t) / 512;
+        super_block->inode_table_sects += (super_block->inode_count * sizeof(d_inode_t) % 512 == 0) ? 0 : 1;
+
+        super_block->root_lba = super_block->inode_table_lba + super_block->inode_table_sects;
+
+        // 数据区开始的扇区
+        super_block->data_start_lba = super_block->root_lba + 1;
+
+        if (i == 0) {
+            mount_partition(super_block);
+
+            // 初始化空闲块位图
+            bitmap_init(&block_bitmap, block_bitmap_buf, 512, 0);
+
+            // 初始化inode结点位图
+            bitmap_init(&inode_bitmap, inode_bitmap_buf, 512, 0);
+        }
+
+        // 将分区的超级块信息写入硬盘
+        size_t write_size = bwrite(g_active_hd->dev_no, partition->start_sect + 1, (char *)super_block, 512);
+        if (write_size == -1) {
+            panic("save super block fail");
+        } else {
+            printk("save super block success: dev: %d, partition index: %d\n", g_active_hd->dev_no, i);
+        }
+    }
+
+    printk("===== end: init super block =====\n");
+}
+
+void mount_partition(super_block_t *block) {
+    assert(block != NULL);
+
+    if (g_active_super_block != NULL) {
+        panic("Please uninstall and mount it");
+    }
+
+    g_active_super_block = block;
+}
+
+void unmount_partition() {
+    g_active_super_block = NULL;
 }

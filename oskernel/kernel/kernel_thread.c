@@ -16,6 +16,9 @@ void kernel_thread_fun(void *arg) {
     init_active_hd_info(g_active_hd->dev_no);
     init_active_hd_partition();
 
+    // 为每个分区创建超级块
+    init_super_block();
+
     active_shell();
 
     while (true);

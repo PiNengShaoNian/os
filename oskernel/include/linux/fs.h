@@ -28,6 +28,17 @@ typedef struct _hd_request_t {
     struct _hd_request_t *next;
 } __attribute__((packed)) hd_request_t;
 
+typedef struct _d_inode_t {
+    unsigned short i_mode;  // 文件类型和属性(rwx)
+    unsigned short i_uid;   // 所属用户的uid
+    unsigned long i_size;   // 文件大小(单位byte)
+    unsigned long i_time;   // 修改时间
+    unsigned char i_gid;    // 所属用户的gid
+    unsigned char i_nlinks; // 链接数(多少文件目录项指向该inode)
+    unsigned short i_zone[9];   // 直接0-6, 一级7, 二级8
+    u8 i_zone_off;
+} __attribute__((packed)) d_inode_t;
+
 void ll_rw_block(int rw, buffer_head_t *bh);
 
 /**
