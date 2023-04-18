@@ -163,10 +163,96 @@ static super_block_t *find_empty_super_block() {
     panic("No superblock is available");
 }
 
+/**
+ * 载入每个分区的超级块
+ *
+ * @param buff 第一个分区的超级块信息
+ */
+static void load_super_block(buffer_head_t *buff) {
+    printk("The superblock has been initialized. loading...\n");
+
+    for (int i = 0; i < HD_PARTITION_MAX; ++i) {
+        hd_partition_t *partition = &g_active_hd->partition[i];
+
+        if (partition->start_sect == 0) {
+            printk("[load super block]hd partition %d is null! pass..\n", i);
+            continue;
+        }
+
+        // 第一个分区的超级块已经传进来了，不用重复读硬盘获取
+        if (i != 0) {
+            buff = bread(g_active_hd->dev_no, g_active_hd->partition[i].start_sect + 1, 1);
+        }
+
+        // 将每个分区的超级块信息保存到内存中
+        memcpy(find_empty_super_block(), buff->data, 512);
+
+        if (i != 0) {
+            kfree_s(buff->data, 512);
+            kfree_s(buff, sizeof(buffer_head_t));
+        }
+
+        printk("[load super block]hd: %d, partition: %d, completed..\n", g_active_hd->dev_no, i);
+
+        // 挂载分区
+        if (i == 0) {
+            mount_partition(&g_super_block[0]);
+
+            // 初始化空闲块位图
+            printk("[init block bitmap]read block bitmap sector: %d\n", g_super_block->block_bitmap_lba);
+
+            buff = bread(g_active_hd->dev_no, g_super_block->block_bitmap_lba, 1);
+
+            memcpy(&block_bitmap_buf, buff->data, 512);
+
+            bitmap_make(&block_bitmap, block_bitmap_buf, 512, 0);
+
+            kfree_s(buff->data, 512);
+            kfree_s(buff, sizeof(buffer_head_t));
+
+            // 初始化inode结点位图
+            printk("[init inode bitmap]read inode bitmap sector: %d\n", g_super_block->inode_bitmap_lba);
+
+            buff = bread(g_active_hd->dev_no, g_super_block->inode_bitmap_lba, 1);
+
+            memcpy(&inode_bitmap_buf, buff->data, 512);
+            bitmap_make(&inode_bitmap, inode_bitmap_buf, 512, 0);
+
+            kfree_s(buff->data, 512);
+            kfree_s(buff, sizeof(buffer_head_t));
+        }
+    }
+}
+
+static bool check_super_block_is_init() {
+    bool ret = false;
+
+    // 先检测超级块有没有创建，如果已经创建了，载入进来（注：超级块是存放在第1个扇区中的。第0扇区按照约定存放OS引导代码)
+    buffer_head_t *buff = bread(g_active_hd->dev_no, g_active_hd->partition[0].start_sect + 1, 1);
+
+    // 只要验证第一个分区的第一个字节即可（1、所有分区中的超级块都是一起创建的
+    // 2、超级块的第一个字节是文件系统类型，至少为EXT=1
+    if (*(uchar *) buff->data != 0) {
+        ret = true;
+
+        load_super_block(buff);
+    }
+
+    kfree_s(buff->data, 512);
+    kfree_s(buff, sizeof(buffer_head_t));
+
+    return ret;
+}
+
 void init_super_block() {
     assert(g_active_hd != NULL);
 
     printk("===== start: init super block =====\n");
+
+    // 检测超级块是否创建
+    if (check_super_block_is_init()) {
+        return;
+    }
 
     for (int i = 0; i < HD_PARTITION_MAX; ++i) {
         hd_partition_t *partition = &g_active_hd->partition[i];
