@@ -74,9 +74,9 @@ typedef struct _hd_t {
 } __attribute__((packed)) hd_t;
 
 typedef struct _hd_channel_t {
-    hd_t    hd[2];      // index=0为主设备，index=1为从设备
-    u16     port_base;  // 通过哪个端口操作该通道 通道1对应的端口0x1f0-0x1f7,控制寄存器端口0x3f6.通道1对应的端口号0x170-0x177,控制寄存器端口0x376
-    u8      irq_no;     // 该通道触发的中断由哪个中断程序处理
+    hd_t hd[2];      // index=0为主设备，index=1为从设备
+    u16 port_base;  // 通过哪个端口操作该通道 通道1对应的端口0x1f0-0x1f7,控制寄存器端口0x3f6.通道1对应的端口号0x170-0x177,控制寄存器端口0x376
+    u8 irq_no;     // 该通道触发的中断由哪个中断程序处理
 } __attribute__((packed)) hd_channel_t;
 
 typedef void (*dev_handler_fun_t)(void);
@@ -85,8 +85,10 @@ void hd_init();
 
 void do_hd_request();
 
-hd_t* get_hd_info(u8 dev);
+hd_t *get_hd_info(u8 dev);
 
-void print_disk_info(hd_t* info);
+void print_disk_info(hd_t *info);
+
+void init_active_hd_info(u8 dev);
 
 #endif // OS_IDE_H

@@ -5,20 +5,16 @@
 #include "../include/shell.h"
 
 extern task_t *current;
+extern hd_t* g_active_hd;
 
 task_t *wait_for_request = NULL;
 
 void kernel_thread_fun(void *arg) {
     hd_init();
 
-    char str[512] = "hello world!";
-    bwrite(1, 0, str, 512);
-
-    // 打印硬盘信息
-    buffer_head_t *buff1 = bread(1, 0, 1);
-    printk("%s\n", buff1->data);
-    kfree_s(buff1->data, 512);
-    kfree_s(buff1, sizeof(buffer_head_t));
+    // 获取hdb盘的信息
+    init_active_hd_info(g_active_hd->dev_no);
+    print_disk_info(g_active_hd);
 
     active_shell();
 
