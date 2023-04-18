@@ -33,8 +33,12 @@ ${BUILD}/kernel.bin: ${BUILD}/boot/head.o ${BUILD}/init/main.o ${BUILD}/kernel/a
 	${BUILD}/kernel/asm/kernel.o ${BUILD}/kernel/system_call.o ${BUILD}/lib/write.o ${BUILD}/lib/error.o ${BUILD}/kernel/system_call.o \
 	${BUILD}/lib/stdio.o ${BUILD}/lib/stdlib.o ${BUILD}/kernel/asm/system_call.o ${BUILD}/lib/unistd.o ${BUILD}/kernel/asm/unistd.o \
 	${BUILD}/kernel/kernel_thread.o ${BUILD}/kernel/assert.o ${BUILD}/kernel/shell.o ${BUILD}/kernel/blk_drv/hd.o ${BUILD}/kernel/asm/hd_handler.o \
-	${BUILD}/kernel/blk_drv/hd_lba28.o
+	${BUILD}/kernel/blk_drv/hd_lba28.o ${BUILD}/fs/buffer.o ${BUILD}/kernel/blk_drv/ll_rw_blk.o
 	ld -m elf_i386 $^ -o $@ -Ttext 0x1200
+
+${BUILD}/fs/%.o: oskernel/fs/%.c
+	$(shell mkdir -p ${BUILD}/fs)
+	gcc ${CFLAGS} ${DEBUG} -c $< -o $@
 
 ${BUILD}/kernel/blk_drv/%.o: oskernel/kernel/blk_drv/%.c
 	$(shell mkdir -p ${BUILD}/kernel/blk_drv)

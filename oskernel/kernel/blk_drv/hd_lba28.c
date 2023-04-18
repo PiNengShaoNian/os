@@ -1,4 +1,5 @@
 #include "../../include/linux/hd.h"
+#include "../../include/linux/fs.h"
 #include "../../include/linux/kernel.h"
 #include "../../include/linux/task.h"
 #include "../../include/string.h"
@@ -6,6 +7,7 @@
 #include "../../include/assert.h"
 
 extern task_t *wait_for_request;
+extern hd_request_t g_hd_request;
 
 dev_handler_fun_t dev_interrupt_handler;
 
@@ -43,6 +45,8 @@ static void print_disk_info(hd_t info) {
 void read_intr() {
     printk("[%s:%d]run...\n", __FUNCTION__, __LINE__);
 
+    port_read(HD_DATA, g_hd_request.buffer, 512 * g_hd_request.nr_sectors / 2);
+
     task_unblock(wait_for_request);
 }
 
@@ -50,9 +54,10 @@ void do_identify() {
     printk("[%s:%d]run...\n", __FUNCTION__, __LINE__);
 
     int status = 0;
-    if (status = win_result()) {
-        panic("[%s:%d]read disk error: %d\n", __FUNCTION__, __LINE__, status);
+    if ((status = win_result()) != 0) {
+        panic("identify disk error: %d\n", status);
     }
+
 
     char buf[512] = {0};
 
@@ -72,16 +77,13 @@ void do_identify() {
 
     // 打印硬盘信息
     print_disk_info(hd);
+
+    task_unblock(wait_for_request);
 }
 
-void hd_out() {
-    char hd = 0;
-    int from = 0;
-    int count = 1;
-    unsigned int cmd = WIN_READ;
-
+static void hd_out(char hd, int from, int count, unsigned int cmd, dev_handler_fun_t handler) {
     // 这个得放在向硬盘发起请求的前面，否则中断例程中用的时候是没值的
-    dev_interrupt_handler = read_intr;
+    dev_interrupt_handler = handler;
 
     out_byte(HD_NSECTOR, count);
     out_byte(HD_SECTOR, from & 0xFF);
@@ -89,4 +91,22 @@ void hd_out() {
     out_byte(HD_HCYL, from >> 16 & 0xFF);
     out_byte(HD_CURRENT, 0b11100000 | (hd << 4) | (from >> 24 & 0xf));
     out_byte(HD_COMMAND, cmd);
+}
+
+void do_hd_request() {
+    dev_handler_fast = false;
+
+    switch (g_hd_request.cmd) {
+        case READ:
+            hd_out(g_hd_request.dev, g_hd_request.sector, g_hd_request.nr_sectors, WIN_READ, read_intr);
+            break;
+        case WRITE:
+            break;
+        case CHECK:
+            dev_handler_fast = true;
+            hd_out(g_hd_request.dev, g_hd_request.sector, g_hd_request.nr_sectors, 0xec, do_identify);
+            break;
+        default:
+            break;
+    }
 }

@@ -19,6 +19,4 @@ void hd_init() {
     printk("hd init...\n");
 
     _hd_init();
-
-    hd_out();
 }

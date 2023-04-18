@@ -83,6 +83,6 @@ typedef void (*dev_handler_fun_t)(void);
 
 void hd_init();
 
-void hd_out();
+void do_hd_request();
 
 #endif // OS_IDE_H
