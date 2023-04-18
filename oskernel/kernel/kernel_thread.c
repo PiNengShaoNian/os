@@ -11,8 +11,11 @@ task_t *wait_for_request = NULL;
 void kernel_thread_fun(void *arg) {
     hd_init();
 
-    buffer_head_t *bh = bread(0, 0, 1);
-    printk("read disk: %x\n", (uchar) bh->data[0]);
+    hd_t *hd = get_hd_info(0);
+
+    // 打印硬盘信息
+    print_disk_info(hd);
+    kfree_s(hd, sizeof(hd_t));
 
     active_shell();
 

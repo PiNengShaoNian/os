@@ -85,4 +85,8 @@ void hd_init();
 
 void do_hd_request();
 
+hd_t* get_hd_info(u8 dev);
+
+void print_disk_info(hd_t* info);
+
 #endif // OS_IDE_H

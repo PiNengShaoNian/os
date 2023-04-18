@@ -34,11 +34,40 @@ static int win_result() {
     return i;
 }
 
-static void print_disk_info(hd_t info) {
+hd_t *get_hd_info(u8 dev) {
+    buffer_head_t *bh = kmalloc(sizeof(buffer_head_t));
+
+    bh->data = kmalloc(512);
+    bh->dev = dev;
+    bh->sector_from = 0;
+    bh->sector_count = 1;
+
+    ll_rw_block(CHECK, bh);
+
+    // 中断例程唤醒后才会执行
+    hd_t *hd = kmalloc(sizeof(hd_t));
+
+    // 从identify返回结果中取出硬盘信息
+    memcpy(hd->number, bh->data + 10 * 20, 2 * 10);
+    hd->number[20] = '\0';
+
+    memcpy(hd->model, bh->data + 2 * 27, 2 * 20);
+    hd->model[40] = '\0';
+
+    hd->sectors = *(int *) (bh->data + 60 * 2);
+
+    kfree_s(bh->data, 512);
+    kfree_s(bh, sizeof(buffer_head_t));
+
+    // 不要调用task_block阻塞任务。调用了也执行不到。所以获取硬盘信息的时候，在中断例程中阻塞任务及唤醒
+    return hd;
+}
+
+void print_disk_info(hd_t* info) {
     printk("===== Hard Disk Info Start =====\n");
-    printk("Hard disk Serial number: %s\n", info.dev_no);
-    printk("Drive model: %s\n", info.model);
-    printk("Hard disk size: %d sectors, %d M\n", info.sectors, info.sectors * 512 / 1024 / 1024);
+    printk("Hard disk Serial number: %s\n", info->dev_no);
+    printk("Drive model: %s\n", info->model);
+    printk("Hard disk size: %d sectors, %d M\n", info->sectors, info->sectors * 512 / 1024 / 1024);
     printk("===== Hard Disk Info End =====\n");
 }
 
@@ -58,25 +87,7 @@ void do_identify() {
         panic("identify disk error: %d\n", status);
     }
 
-
-    char buf[512] = {0};
-
-    // 读硬盘
-    port_read(HD_DATA, buf, 512 / 2);
-
-    hd_t hd;
-
-    // 从identify返回结果中取出硬盘信息
-    memcpy(&hd.number, buf + 10 * 20, 2 * 10);
-    hd.number[20] = '\0';
-
-    memcpy(&hd.model, buf + 2 * 27, 2 * 20);
-    hd.model[40] = '\0';
-
-    hd.sectors = *(int *) (buf + 60 * 2);
-
-    // 打印硬盘信息
-    print_disk_info(hd);
+    port_read(HD_DATA, g_hd_request.buffer, 512 * g_hd_request.nr_sectors / 2);
 
     task_unblock(wait_for_request);
 }
