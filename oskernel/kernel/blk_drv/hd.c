@@ -219,7 +219,7 @@ void init_super_block() {
         }
 
         // 将分区的超级块信息写入硬盘
-        size_t write_size = bwrite(g_active_hd->dev_no, partition->start_sect + 1, (char *)super_block, 512);
+        size_t write_size = bwrite(g_active_hd->dev_no, partition->start_sect + 1, (char *) super_block, 512);
         if (write_size == -1) {
             panic("save super block fail");
         } else {
@@ -242,4 +242,21 @@ void mount_partition(super_block_t *block) {
 
 void unmount_partition() {
     g_active_super_block = NULL;
+}
+
+void print_super_block() {
+    assert(g_active_super_block != NULL);
+
+    printk("lba base: %d\n", g_active_super_block->lba_base);
+    printk("sector count: %d\n", g_active_super_block->sector_count);
+    printk("os bootloader sector: %d\n", g_active_super_block->lba_base);
+    printk("super block sector: %d\n", g_active_super_block->lba_base + 1);
+    printk("block bitmap lba: %d\n", g_active_super_block->block_bitmap_lba);
+    printk("block bitmap sectors: %d\n", g_active_super_block->block_bitmap_sects);
+    printk("inode bitmap lba: %d\n", g_active_super_block->inode_bitmap_lba);
+    printk("inode bitmap sectors: %d\n", g_active_super_block->inode_bitmap_sects);
+    printk("inode table lba: %d\n", g_active_super_block->inode_table_lba);
+    printk("inode table sectors: %d\n", g_active_super_block->inode_table_sects);
+    printk("root lba: %d\n", g_active_super_block->root_lba);
+    printk("data start lba: %d\n", g_active_super_block->data_start_lba);
 }

@@ -41,6 +41,8 @@ void exec_command_shell() {
 
     if (!strcmp("1", g_shell_command)) {
         printk("run 1\n");
+    } else if (!strcmp("print_super_block", g_shell_command)) {
+        print_super_block();
     }
 
     g_shell_command_off = 0;

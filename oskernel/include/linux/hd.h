@@ -138,4 +138,6 @@ void mount_partition(super_block_t *block);
 
 void unmount_partition();
 
+void print_super_block();
+
 #endif // OS_IDE_H
