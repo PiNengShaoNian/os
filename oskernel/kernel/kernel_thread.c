@@ -20,6 +20,9 @@ void kernel_thread_fun(void *arg) {
     // 为每个分区创建超级块
     init_super_block();
 
+    // 重置位图
+    reset_bitmap();
+
     // 创建根目录
     create_root_dir();
 

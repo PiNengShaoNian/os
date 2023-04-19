@@ -550,6 +550,7 @@ void ls_current_dir() {
     }
 
     printk("inode index: %d\n", dir_inode);
+    printk("dir index: %d\n", dir_index);
 
     if (dir_index == 0) {
         printk("empty!\n");
@@ -558,7 +559,7 @@ void ls_current_dir() {
 
     // 拿到根目录的inode
     bh = bread(g_active_hd->dev_no, g_active_super_block->inode_table_lba, 1);
-    m_inode_t *inode = bh->data + entry->inode * sizeof(m_inode_t);
+    m_inode_t *inode = bh->data + dir_inode * sizeof(m_inode_t);
 
     // 拿到根目录存储数据的扇区号
     int zone = inode->i_zone[inode->i_zone_off - 1];
@@ -571,7 +572,7 @@ void ls_current_dir() {
     bh = bread(g_active_hd->dev_no, zone, 1);
 
     entry = bh->data;
-    for (int i = 0; i < inode->i_zone_off; ++i) {
+    for (int i = 0; i < dir_index; ++i) {
         printk("%s ", entry->name);
 
         entry++;
@@ -581,4 +582,76 @@ void ls_current_dir() {
     // 释放内存
     kfree_s(bh->data, 512);
     kfree_s(bh, sizeof(bh));
+}
+
+/**
+ * 创建目录是很复杂的过程，需要与硬盘交互很多次，顺序可以随意，没有哪个要先做哪个要后做
+ * 但是必须保证整个流程是原子操作，不能被打断，否则硬盘的数据就是乱的
+ * @param name
+ */
+void create_dir(char *name) {
+    int write_size, inode_index;
+
+    int parent_inode_current_zone = current->current_active_dir_inode->i_zone[
+            current->current_active_dir_inode->i_zone_off - 1];
+    assert(parent_inode_current_zone >= 0);
+
+    printk("[%s]parent_inode_current_zone: %d\n", __FUNCTION__, parent_inode_current_zone);
+
+    // 读出存储目录项的那个扇区
+    buffer_head_t *bh = bread(g_active_hd->dev_no, parent_inode_current_zone, 1);
+    printk("[%s]create %d directory\n", __FUNCTION__, current->current_active_dir->dir_index);
+
+    // 1. 创建目录项
+    dir_entry_t *dir_entry = bh->data + sizeof(dir_entry_t) * current->current_active_dir->dir_index++;
+
+    memset(dir_entry->name, 0, 16);
+    memcpy(dir_entry->name, name, strlen(name));
+
+    dir_entry->ft = FILE_TYPE_DIRECTORY;
+    dir_entry->dir_index = 0;
+
+    // 2. 申请inode index (第一次写硬盘
+    inode_index = dir_entry->inode = iget();
+    print_inode_bitmap();
+
+    // 3. 将目录的目录项写入硬盘 (第二次写硬盘
+    write_size = bwrite(g_active_hd->dev_no, parent_inode_current_zone, bh->data, 512);
+    assert(write_size != -1);
+
+    printk("[save directory entry]sector: %d\n", parent_inode_current_zone);
+
+    // 父目录的属性有更新，写回去
+    memset(dir_entry, 0, sizeof(dir_entry_t));
+    memcpy(dir_entry, current->current_active_dir, sizeof(dir_entry));
+
+    printk("[write parent dir info]dir index:%d\n", current->current_active_dir->dir_index);
+
+    write_size = bwrite(g_active_hd->dev_no, g_active_super_block->root_lba, dir_entry, 512);
+    assert(write_size != -1);
+
+    kfree_s(bh->data, 512);
+    kfree_s(bh, sizeof(buffer_head_t));
+
+    // 存储inode
+    int inode_sector = g_active_super_block->inode_table_lba;
+    printk("[save inode]inode sector: %d\n", inode_sector);
+    bh = bread(g_active_hd->dev_no, inode_sector, 1);
+
+    // TODO inode数组数据需要从硬盘中读，不然永远写的都是第一个
+    d_inode_t *inode = bh->data + inode_index * sizeof(d_inode_t);
+    inode->i_mode = 777;
+    inode->i_size = 0;
+    inode->i_zone_off = 0;
+
+    // 申请数据块（第三次写硬盘
+    inode->i_zone[inode->i_zone_off++] = get_data_sector();
+    print_block_bitmap();
+
+    // 将inode对象写入硬盘（第四次写硬盘
+    write_size = bwrite(g_active_hd->dev_no, inode_sector, bh->data, 512);
+    assert(write_size != -1);
+
+    kfree_s(bh->data, 512);
+    kfree_s(bh, sizeof(buffer_head_t));
 }

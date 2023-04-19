@@ -144,6 +144,12 @@ void exec_command_shell() {
         print_root_dir();
     } else if (!strcmp("ls", commands[0])) {
         ls_current_dir();
+    } else if (!strcmp("mkdir", commands[0])) {
+        for (int i = 1; i < command_len; ++i) {
+            printk("===== start mkdir: %s =====\n", commands[i]);
+            create_dir(commands[i]);
+            printk("===== end mkdir: %s =====\n", commands[i]);
+        }
     } else {
         for (int i = 0; i < command_len; ++i) {
             printk("%s ", commands[i]);
