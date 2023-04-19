@@ -2,10 +2,12 @@
 #include "../include/linux/hd.h"
 #include "../include/linux/fs.h"
 #include "../include/linux/mm.h"
+#include "../include/linux/task.h"
 #include "../include/shell.h"
 #include "../include/string.h"
 #include "../include/assert.h"
 
+extern task_t *current;
 bool g_active_shell = false;
 
 // 用于存储键盘输入的shell命令
@@ -20,7 +22,7 @@ bool active_shell() {
     g_active_shell = true;
 
     printk("shell activated!\n");
-    printk("> ");
+    printk("[%s]> ", current->current_active_dir->name);
 }
 
 bool close_shell() {
@@ -140,6 +142,8 @@ void exec_command_shell() {
         print_bitmap();
     } else if (!strcmp("print_root_dir", commands[0])) {
         print_root_dir();
+    } else if (!strcmp("ls", commands[0])) {
+        ls_current_dir();
     } else {
         for (int i = 0; i < command_len; ++i) {
             printk("%s ", commands[i]);
@@ -153,7 +157,7 @@ void exec_command_shell() {
     g_shell_command_off = 0;
     memset(g_shell_command, 0, 64);
 
-    printk("> ");
+    printk("[%s]> ", current->current_active_dir->name);
 }
 
 /**

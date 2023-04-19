@@ -127,4 +127,6 @@ void create_root_dir();
 
 void print_root_dir();
 
+void ls_current_dir();
+
 #endif // OS_FS_H

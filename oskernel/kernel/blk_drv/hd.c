@@ -527,3 +527,58 @@ void print_root_dir() {
     kfree_s(bh->data, 512);
     kfree_s(bh, sizeof(buffer_head_t));
 }
+
+void ls_current_dir() {
+    // 拿到根目录数据
+    dir_entry_t *entry = NULL;
+    buffer_head_t *bh = NULL;
+    u32 dir_inode = 0;
+    u32 dir_index = 0;
+
+    if (!strcmp(current->current_active_dir->name, "/")) {
+        entry = current->current_active_dir;
+        dir_inode = entry->inode;
+        dir_index = entry->dir_index;
+    } else {
+        bh = bread(g_active_hd->dev_no, g_active_super_block->root_lba, 1);
+        entry = bh->data;
+        dir_inode = entry->inode;
+        dir_index = entry->dir_index;
+
+        kfree_s(bh->data, 512);
+        kfree_s(bh, sizeof(buffer_head_t));
+    }
+
+    printk("inode index: %d\n", dir_inode);
+
+    if (dir_index == 0) {
+        printk("empty!\n");
+        return;
+    }
+
+    // 拿到根目录的inode
+    bh = bread(g_active_hd->dev_no, g_active_super_block->inode_table_lba, 1);
+    m_inode_t *inode = bh->data + entry->inode * sizeof(m_inode_t);
+
+    // 拿到根目录存储数据的扇区号
+    int zone = inode->i_zone[inode->i_zone_off - 1];
+    kfree_s(bh->data, 512);
+    kfree_s(bh, sizeof(buffer_head_t));
+
+    printk("data zone: %d\n", zone);
+
+    // 读硬盘拿到根目录中所有的目录项
+    bh = bread(g_active_hd->dev_no, zone, 1);
+
+    entry = bh->data;
+    for (int i = 0; i < inode->i_zone_off; ++i) {
+        printk("%s ", entry->name);
+
+        entry++;
+    }
+    printk("\n");
+
+    // 释放内存
+    kfree_s(bh->data, 512);
+    kfree_s(bh, sizeof(bh));
+}
