@@ -93,7 +93,7 @@ typedef enum {
 
 typedef struct _dir_entry_t {
     char name[16];  // 根据第一个字节是不是0来判断根目录扇区是否初始化
-    ushort inode;
+    ushort inode;  // 该目录项对应的inode结点在inode数组中的index
     file_type ft;
     u32 dir_index;  // 如果是目录，下一个文件目录项的index
 } __attribute__((packed)) dir_entry_t;
@@ -119,9 +119,15 @@ buffer_head_t *bread(int dev, int from, int count);
 
 size_t bwrite(int dev, int from, char *buff, int size);
 
+void iset(u32 index, bool v);
+
 int iget();
 
 int get_data_sector();
+
+void set_data_sector(u32 index, bool v);
+
+void print_dir_entry(dir_entry_t *entry);
 
 void create_root_dir();
 

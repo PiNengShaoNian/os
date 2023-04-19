@@ -712,8 +712,30 @@ static filepath_parse_result *parse_filepath(const char *filepath) {
     return ret;
 }
 
+/**
+ * 获取一个目录的所有目录项（只实现读第一个数据区
+ * @param dir_name
+ * @return
+ */
+static dir_entry_t *get_root_directory_children() {
+    // 拿到根目录存储数据的扇区号
+    int zone = current->root_dir_inode->i_zone[current->root_dir_inode->i_zone_off - 1];
+
+    // 读硬盘拿到根目录中所有的目录项
+    buffer_head_t *bh = bread(g_active_hd->dev_no, zone, 1);
+
+    dir_entry_t *ret = (dir_entry_t *) bh->data;
+
+    kfree_s(bh, sizeof(bh));
+
+    return ret;
+}
+
 void rm_directory(const char *filepath) {
     assert(filepath != NULL);
+
+    int write_size = 0;
+    char *buf = kmalloc(512);
 
     filepath_parse_result *parse_result = parse_filepath(filepath);
     if (parse_result->depth == 0) {
@@ -721,7 +743,68 @@ void rm_directory(const char *filepath) {
         return;
     }
 
-    for (int i = 0; i < parse_result->depth; ++i) {
-        printk("%s\n", parse_result->data[i]);
+    dir_entry_t *children = get_root_directory_children();
+    if (children->name[0] == 0) {
+        printk("empty!\n");
+        goto done;
     }
+
+    // 判断目录是否存在
+    dir_entry_t *entry = NULL;
+    dir_entry_t *tmp = (dir_entry_t *) children;
+    while (tmp != NULL && (tmp->name[0] != 0)) {
+        if (!strcmp(parse_result->data[0], tmp->name)) {
+            entry = tmp;
+            break;
+        }
+
+        tmp++;
+    }
+
+    if (entry == NULL) {
+        printk("directory %s not exists", parse_result->data[0]);
+        goto done;
+    }
+
+    // 判断是不是目录
+    if (entry->ft != FILE_TYPE_DIRECTORY) {
+        printk("not a directory\n");
+        goto done;
+    }
+
+    print_dir_entry(entry);
+
+    current->current_active_dir->dir_index--;
+    memcpy(buf, current->current_active_dir, sizeof(dir_entry_t));
+
+    printk("[write parent dir info]dir index:%d\n", current->current_active_dir->dir_index);
+
+    write_size = bwrite(g_active_hd->dev_no, g_active_super_block->root_lba, buf, 512);
+    assert(write_size != -1);
+
+    // 释放inode位图
+    iset(entry->inode, 0);
+
+    // 释放block位图
+    buffer_head_t *bh = bread(g_active_hd->dev_no, g_active_super_block->inode_table_lba, 1);
+    m_inode_t *inode = bh->data + entry->inode * sizeof(d_inode_t);
+
+    set_data_sector(inode->i_zone[0], 0);
+
+    kfree_s(bh->data, 512);
+    kfree_s(bh, sizeof(buffer_head_t));
+
+    done:
+    kfree_s(buf, 512);
+    kfree_s(children, 512);
+}
+
+
+void print_dir_entry(dir_entry_t *entry) {
+    assert(entry != NULL);
+
+    printk("name: %s\n", entry->name);
+    printk("file type: %d\n", entry->ft);
+    printk("inode: %d\n", entry->inode);
+    printk("dir index: %d\n", entry->dir_index);
 }
