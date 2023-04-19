@@ -2,6 +2,7 @@
 #include "../include/linux/task.h"
 #include "../include/linux/mm.h"
 #include "../include/string.h"
+#include "../include/assert.h"
 
 extern void sched_task();
 
@@ -269,4 +270,15 @@ void set_block(task_t *task) {
 
 bool is_blocked(task_t *task) {
     return task->state == TASK_BLOCKED;
+}
+
+int find_empty_file_descriptor() {
+    for (int i = 0; i < NR_OPEN; ++i) {
+        file_t *file = &current->file_descriptor[i];
+        if (file->f_mode == NULL) {
+            return i;
+        }
+    }
+
+    return -1;
 }

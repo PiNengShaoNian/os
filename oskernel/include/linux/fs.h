@@ -9,6 +9,42 @@
 #define WRITEA 3    /* "write-ahead" - silly, but somewhat useful */
 #define CHECK  4     // 检测硬盘,获取硬盘容量等信息
 
+#define O_ACCMODE       0003
+#define O_RDONLY         00
+#define O_WRONLY         01
+#define O_RDWR             02
+#ifndef O_CREAT
+# define O_CREAT       0100    /* Not fcntl.  */
+#endif
+#ifndef O_EXCL
+# define O_EXCL           0200    /* Not fcntl.  */
+#endif
+#ifndef O_NOCTTY
+# define O_NOCTTY       0400    /* Not fcntl.  */
+#endif
+#ifndef O_TRUNC
+# define O_TRUNC      01000    /* Not fcntl.  */
+#endif
+#ifndef O_APPEND
+# define O_APPEND      02000
+#endif
+#ifndef O_NONBLOCK
+# define O_NONBLOCK      04000
+#endif
+#ifndef O_NDELAY
+# define O_NDELAY    O_NONBLOCK
+#endif
+#ifndef O_SYNC
+# define O_SYNC           04010000
+#endif
+#define O_FSYNC        O_SYNC
+#ifndef O_ASYNC
+# define O_ASYNC     020000
+#endif
+#ifndef __O_LARGEFILE
+# define __O_LARGEFILE    0100000
+#endif
+
 typedef struct _buffer_head_t {
     char *data;
     u8 dev;            // 读哪块硬盘
@@ -39,6 +75,17 @@ typedef struct _d_inode_t {
     u8 i_zone_off;
 } __attribute__((packed)) d_inode_t;
 
+typedef struct _m_inode_t {
+    unsigned short i_mode;  // 文件类型和属性(rwx)
+    unsigned short i_uid;   // 所属用户的uid
+    unsigned long i_size;   // 文件大小(单位byte)
+    unsigned long i_time;   // 修改时间
+    unsigned char i_gid;    // 所属用户的gid
+    unsigned char i_nlinks; // 链接数(多少文件目录项指向该inode)
+    unsigned short i_zone[9];   // 直接0-6, 一级7, 二级8
+    u8 i_zone_off;
+} __attribute__((packed)) m_inode_t;
+
 typedef enum {
     FILE_TYPE_REGULAR = 1, // 普通文件
     FILE_TYPE_DIRECTORY // 目录文件
@@ -50,6 +97,14 @@ typedef struct _dir_entry_t {
     file_type ft;
     u32 dir_index;  // 如果是目录，下一个文件目录项的index
 } __attribute__((packed)) dir_entry_t;
+
+typedef struct _file_t {
+    unsigned short f_mode; // 文件读写权限
+    unsigned short f_flags; // 文件控制标志
+    unsigned short f_count;// 对应文件句柄
+    m_inode_t *f_inode; // 对应inode
+    uint f_pos; // 文件偏移
+} __attribute__((packed)) file_t;
 
 void ll_rw_block(int rw, buffer_head_t *bh);
 

@@ -13,4 +13,6 @@ extern pid_t sys_get_pid();
 
 extern pid_t sys_get_ppid();
 
+int sys_open(const char *pathname, int flags);
+
 #endif // OSKERNEL_SYS_H

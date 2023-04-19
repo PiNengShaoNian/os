@@ -171,7 +171,7 @@ protected_mode:
     ; 将内核读入内存
     mov edi, KERNEL_ADDR
     mov ecx, 3    ; 从那个扇区开始读
-    mov bl, 60    ; 读几个扇区
+    mov bl, 100    ; 读几个扇区
     call read_hd
 
     jmp CODE_SELECTOR:KERNEL_ADDR

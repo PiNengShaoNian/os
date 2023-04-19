@@ -2,6 +2,7 @@
 #include "../include/linux/hd.h"
 #include "../include/linux/fs.h"
 #include "../include/linux/task.h"
+#include "../include/linux/sys.h"
 #include "../include/shell.h"
 
 extern task_t *current;
@@ -21,6 +22,9 @@ void kernel_thread_fun(void *arg) {
 
     // 创建根目录
     create_root_dir();
+
+    // 打开根目录
+    sys_open("/", O_RDWR);
 
     active_shell();
 

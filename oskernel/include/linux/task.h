@@ -3,9 +3,12 @@
 
 #include "types.h"
 #include "mm.h"
+#include "fs.h"
 
 // 进程上限
 #define NR_TASKS 64
+
+#define NR_OPEN 16
 
 typedef void *(*task_fun_t)(void *);
 
@@ -68,6 +71,15 @@ typedef struct task_t {
     // 读硬盘的时候，有可能先阻塞任务再进入硬盘中断，这是正常情况，这个属性用不上
     // 还有一种情况就是还未阻塞任务就进入了硬盘中断，所以需要这个属性来判断
     bool resume_from_irq;
+
+    file_t *file_descriptor[NR_OPEN];
+
+    dir_entry_t *current_active_dir;
+    m_inode_t *current_active_dir_inode;
+
+    dir_entry_t *root_dir;
+    m_inode_t *root_dir_inode;
+
     int magic;
 } task_t;
 
@@ -108,5 +120,7 @@ void task_unblock(task_t *task);
 void set_block(task_t *task);
 
 bool is_blocked(task_t *task);
+
+int find_empty_file_descriptor();
 
 #endif // OSKERNEL_TASK_H

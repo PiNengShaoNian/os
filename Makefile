@@ -19,7 +19,7 @@ all: ${BUILD}/boot/boot.o ${BUILD}/boot/setup.o ${BUILD}/system.bin
 	bximage -q -hd=16 -func=create -sectsize=512 -imgmode=flat $(BUILD)/$(HD_IMG_NAME)
 	dd if=${BUILD}/boot/boot.o of=$(BUILD)/$(HD_IMG_NAME) bs=512 seek=0 count=1 conv=notrunc
 	dd if=${BUILD}/boot/setup.o of=$(BUILD)/$(HD_IMG_NAME) bs=512 seek=1 count=2 conv=notrunc
-	dd if=${BUILD}/system.bin of=$(BUILD)/$(HD_IMG_NAME) bs=512 seek=3 count=60 conv=notrunc
+	dd if=${BUILD}/system.bin of=$(BUILD)/$(HD_IMG_NAME) bs=512 seek=3 count=100 conv=notrunc
 
 ${BUILD}/system.bin: ${BUILD}/kernel.bin
 	objcopy -O binary ${BUILD}/kernel.bin ${BUILD}/system.bin
@@ -34,7 +34,7 @@ ${BUILD}/kernel.bin: ${BUILD}/boot/head.o ${BUILD}/init/main.o ${BUILD}/kernel/a
 	${BUILD}/lib/stdio.o ${BUILD}/lib/stdlib.o ${BUILD}/kernel/asm/system_call.o ${BUILD}/lib/unistd.o ${BUILD}/kernel/asm/unistd.o \
 	${BUILD}/kernel/kernel_thread.o ${BUILD}/kernel/assert.o ${BUILD}/kernel/shell.o ${BUILD}/kernel/blk_drv/hd.o ${BUILD}/kernel/asm/hd_handler.o \
 	${BUILD}/kernel/blk_drv/hd_lba28.o ${BUILD}/fs/buffer.o ${BUILD}/kernel/blk_drv/ll_rw_blk.o ${BUILD}/kernel/bitmap.o \
-	${BUILD}/fs/inode.o ${BUILD}/fs/sector.o
+	${BUILD}/fs/inode.o ${BUILD}/fs/sector.o ${BUILD}/fs/open.o
 	ld -m elf_i386 $^ -o $@ -Ttext 0x1200
 
 ${BUILD}/fs/%.o: oskernel/fs/%.c
