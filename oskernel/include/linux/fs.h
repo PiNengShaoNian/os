@@ -52,4 +52,8 @@ buffer_head_t *bread(int dev, int from, int count);
 
 size_t bwrite(int dev, int from, char *buff, int size);
 
+int iget();
+
+void create_root_dir();
+
 #endif // OS_FS_H

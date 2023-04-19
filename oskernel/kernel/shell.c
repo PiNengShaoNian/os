@@ -1,6 +1,7 @@
 #include "../include/linux/kernel.h"
 #include "../include/linux/hd.h"
 #include "../include/linux/fs.h"
+#include "../include/linux/mm.h"
 #include "../include/shell.h"
 #include "../include/string.h"
 #include "../include/assert.h"
@@ -36,29 +37,112 @@ void put_char_shell(char ch) {
     g_shell_command[g_shell_command_off++] = ch;
 }
 
+/**
+ * 解析用户输入的shell字符串有几个有限字符串（这些字符串就是命令 + 参数
+ * @return
+ */
+static int shell_command_size() {
+    int size = 0;
+
+    int off = 0;
+    char ch;
+    while ((ch = g_shell_command[off++]) != '\0') {
+        if (ch == ' ') {
+            size++;
+
+            // 后面接着的空格耗完
+            while (g_shell_command[off] == ' ') {
+                off++;
+            }
+        }
+    }
+
+    return size;
+}
+
+/**
+ * 解析用户输入的shell命令
+ * @param arr_len
+ * @return
+ */
+static char **parse_shell_command(OUT int *arr_len) {
+    char **ret = kmalloc(shell_command_size() * sizeof(char *));
+
+    int size = 0;   // 碰到一个空格+1, 连续的空格不算
+    int off = 0;    // 字符串游标
+    int command_len = 0;    // 命令长度
+    int command_start = 0;  // 命令或参数开始的位置
+    char ch;
+
+    while ((ch = g_shell_command[off++]) != '\0') {
+        if (ch != ' ') {
+            command_len++;
+        }
+
+        if (g_shell_command[off] == '\0') {
+            char *str = kmalloc(command_len + 1);
+            memset(str, 0, command_len + 1);
+
+            memcpy(str, &g_shell_command[command_start], command_len);
+
+            ret[size++] = str;
+
+            break;
+        }
+
+        if (ch == ' ') {
+            char *str = kmalloc(command_len + 1);
+            memset(str, 0, command_len + 1);
+
+            memcpy(str, &g_shell_command[command_start], command_len);
+
+            ret[size++] = str;
+
+            command_len = 0;
+            command_start = off;
+
+            while (g_shell_command[off] == ' ') {
+                command_start++;
+
+                off++;
+            }
+        }
+    }
+
+    if (arr_len != NULL) {
+        *arr_len = size;
+    }
+
+    return ret;
+}
+
 void exec_command_shell() {
     if (!g_active_shell) return;
 
-//    printk("start exec: %s\n", g_shell_command);
+    int command_len = 0;
+    char **commands = parse_shell_command(&command_len);
 
-    if (!strcmp("1", g_shell_command)) {
+    if (!strcmp("1", commands[0])) {
         printk("run 1\n");
-    } else if (!strcmp("print_super_block", g_shell_command)) {
+    } else if (!strcmp("print_super_block", commands[0])) {
         print_super_block();
-    } else if (!strcmp("print_block_bitmap", g_shell_command)) {
+    } else if (!strcmp("print_block_bitmap", commands[0])) {
         print_block_bitmap();
-    } else if (!strcmp("reset_block_bitmap", g_shell_command)) {
+    } else if (!strcmp("reset_block_bitmap", commands[0])) {
         reset_block_bitmap();
-    } else if (!strcmp("print_inode_bitmap", g_shell_command)) {
+    } else if (!strcmp("print_inode_bitmap", commands[0])) {
         print_inode_bitmap();
-    } else if (!strcmp("reset_inode_bitmap", g_shell_command)) {
+    } else if (!strcmp("reset_inode_bitmap", commands[0])) {
         reset_inode_bitmap();
-    } else if (!strcmp("reset_bitmap", g_shell_command)) {
+    } else if (!strcmp("reset_bitmap", commands[0])) {
         reset_bitmap();
-    } else if (!strcmp("print_bitmap", g_shell_command)) {
+    } else if (!strcmp("print_bitmap", commands[0])) {
         print_bitmap();
     }
 
+    for (int i = 0; i < command_len; ++i) {
+        kfree_s(commands[i], strlen(commands[i]) + 1);
+    }
     g_shell_command_off = 0;
     memset(g_shell_command, 0, 64);
 

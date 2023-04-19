@@ -146,7 +146,7 @@ void init_active_hd_partition() {
     buffer_head_t *buff = bread(g_active_hd->dev_no, 0, 1);
 
     // 赋值硬盘分区信息
-    mbr_sector_t *mbr_sector = buff->data;
+    mbr_sector_t *mbr_sector = (mbr_sector_t *) buff->data;
     memcpy(g_active_hd->partition, mbr_sector->partition, 64);
 
     kfree_s(buff->data, 512);
@@ -201,25 +201,28 @@ static void load_super_block(buffer_head_t *buff) {
             // 初始化空闲块位图
             printk("[init block bitmap]read block bitmap sector: %d\n", g_super_block->block_bitmap_lba);
 
-            buff = bread(g_active_hd->dev_no, g_super_block->block_bitmap_lba, 1);
+//            buff = bread(g_active_hd->dev_no, g_super_block->block_bitmap_lba, 1);
+//
+//            memcpy(&block_bitmap_buf, buff->data, 512);
 
-            memcpy(&block_bitmap_buf, buff->data, 512);
+            memset(&block_bitmap_buf, 0, 512);
 
             bitmap_make(&block_bitmap, block_bitmap_buf, 512, 0);
 
-            kfree_s(buff->data, 512);
-            kfree_s(buff, sizeof(buffer_head_t));
+//            kfree_s(buff->data, 512);
+//            kfree_s(buff, sizeof(buffer_head_t));
 
             // 初始化inode结点位图
             printk("[init inode bitmap]read inode bitmap sector: %d\n", g_super_block->inode_bitmap_lba);
 
-            buff = bread(g_active_hd->dev_no, g_super_block->inode_bitmap_lba, 1);
-
-            memcpy(&inode_bitmap_buf, buff->data, 512);
+//            buff = bread(g_active_hd->dev_no, g_super_block->inode_bitmap_lba, 1);
+//
+//            memcpy(&inode_bitmap_buf, buff->data, 512);
+            memset(&inode_bitmap_buf, 0, 512);
             bitmap_make(&inode_bitmap, inode_bitmap_buf, 512, 0);
 
-            kfree_s(buff->data, 512);
-            kfree_s(buff, sizeof(buffer_head_t));
+//            kfree_s(buff->data, 512);
+//            kfree_s(buff, sizeof(buffer_head_t));
         }
     }
 }
@@ -379,7 +382,7 @@ void reset_block_bitmap() {
     memset(block_bitmap_buf, 0, 512);
 
     // 根目录数据区占用数据区第一个扇区
-    block_bitmap_buf[0] = 1;
+//    block_bitmap_buf[0] = 1;
 
     // 写入硬盘
     int write_size = bwrite(g_active_hd->dev_no, g_active_super_block->block_bitmap_lba, block_bitmap_buf, 512);
@@ -418,7 +421,7 @@ void reset_inode_bitmap() {
     memset(inode_bitmap_buf, 0, 512);
 
     // inode表第一个数据项是根目录的
-    inode_bitmap_buf[0] = 1;
+//    inode_bitmap_buf[0] = 1;
 
     // 写入硬盘
     int write_size = bwrite(g_active_hd->dev_no, g_active_super_block->inode_bitmap_lba, inode_bitmap_buf, 512);
@@ -433,4 +436,16 @@ void print_bitmap() {
 void reset_bitmap() {
     reset_block_bitmap();
     reset_inode_bitmap();
+}
+
+void create_root_dir() {
+    int inode = iget();
+    int inode1 = iget();
+    int inode2 = iget();
+
+    bitmap_set(&inode_bitmap, inode1, 0);
+
+    int inode3 = iget();
+
+    printk("%d, %d, %d, %d\n", inode, inode1, inode2, inode3);
 }

@@ -7,6 +7,8 @@
 
 #define EOS '\0' // 字符串结尾
 
+#define OUT
+
 #define bool _Bool
 #define true 1
 #define false 0
