@@ -125,4 +125,6 @@ int get_data_sector();
 
 void create_root_dir();
 
+void print_root_dir();
+
 #endif // OS_FS_H

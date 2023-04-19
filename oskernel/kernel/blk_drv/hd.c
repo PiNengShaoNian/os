@@ -3,9 +3,12 @@
 #include "../../include/linux/mm.h"
 #include "../../include/linux/kernel.h"
 #include "../../include/linux/bitmap.h"
+#include "../../include/linux/task.h"
 #include "../../include/string.h"
 #include "../../include/assert.h"
 #include "../../include/asm/io.h"
+
+extern task_t *current;
 
 // 不考虑扩展分区
 #define HD_PARTITION_MAX    4
@@ -487,4 +490,40 @@ void create_root_dir() {
     kfree_s(dir_entry, 512);
 
     printk("===== end: create root dir =====\n");
+}
+
+void print_root_dir() {
+    assert(current != NULL);
+    assert(current->current_active_dir != NULL);
+
+    printk("[mm]current work dir: %s\n", current->current_active_dir->name);
+    printk("[mm]current work dir inode: %d\n", current->current_active_dir->inode);
+    printk("[mm]current work dir data index: %d\n", current->current_active_dir->dir_index);
+
+    printk("[mm]current work dir data zone: ");
+    for (int i = 0; i < current->current_active_dir_inode->i_zone_off; ++i) {
+        printk("%d ", current->current_active_dir_inode->i_zone[i]);
+    }
+    printk("\n");
+
+    buffer_head_t *bh = bread(g_active_hd->dev_no, g_active_super_block->root_lba, 1);
+    dir_entry_t *dir = (dir_entry_t *) bh->data;
+
+    printk("[hd]current work dir: %s\n", dir->name);
+    printk("[hd]current work dir inode: %d\n", dir->inode);
+    printk("[hd]current work dir data index: %d\n", dir->dir_index);
+    kfree_s(bh->data, 512);
+    kfree_s(bh, sizeof(buffer_head_t));
+
+    bh = bread(g_active_hd->dev_no, g_active_super_block->inode_table_lba, 1);
+    m_inode_t *inode = (m_inode_t *) bh->data;
+
+    printk("[hd]current work dir data zone: ");
+    for (int i = 0; i < inode->i_zone_off; ++i) {
+        printk("%d ", inode->i_zone[i]);
+    }
+    printk("\n");
+
+    kfree_s(bh->data, 512);
+    kfree_s(bh, sizeof(buffer_head_t));
 }

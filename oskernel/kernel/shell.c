@@ -138,6 +138,13 @@ void exec_command_shell() {
         reset_bitmap();
     } else if (!strcmp("print_bitmap", commands[0])) {
         print_bitmap();
+    } else if (!strcmp("print_root_dir", commands[0])) {
+        print_root_dir();
+    } else {
+        for (int i = 0; i < command_len; ++i) {
+            printk("%s ", commands[i]);
+        }
+        printk("\n");
     }
 
     for (int i = 0; i < command_len; ++i) {
