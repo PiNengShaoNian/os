@@ -439,13 +439,52 @@ void reset_bitmap() {
 }
 
 void create_root_dir() {
-    int inode = iget();
-    int inode1 = iget();
-    int inode2 = iget();
+    printk("===== start: create root dir =====\n");
 
-    bitmap_set(&inode_bitmap, inode1, 0);
+    int write_size;
+    char *name = "/";
 
-    int inode3 = iget();
+    // 1. 创建目录项
+    dir_entry_t *dir_entry = kmalloc(512);
 
-    printk("%d, %d, %d, %d\n", inode, inode1, inode2, inode3);
+    memset(dir_entry->name, 0, 16);
+    memcpy(dir_entry->name, name, strlen(name));
+
+    dir_entry->ft = FILE_TYPE_DIRECTORY;
+    dir_entry->dir_index = 0;
+
+    // 2. 申请inode index (第一次写硬盘
+    dir_entry->inode = iget();
+
+    // 3. 将目录项写入硬盘 (第二次写硬盘
+    write_size = bwrite(g_active_hd->dev_no, g_active_super_block->root_lba, (char *) dir_entry, 512);
+    assert(write_size != -1);
+
+    printk("[save root directory entry]sector: %d\n", g_active_super_block->root_lba);
+
+    /* 存储inode */
+    // 先计算inode存储在哪个扇区
+    int inode_sector = g_active_super_block->inode_table_lba;
+
+    printk("[save inode]inode sector: %d\n", inode_sector);
+
+    // 创建inode对象 (复用dir_entry申请的内存
+    memset(dir_entry, 0, 512);
+
+    d_inode_t *inode = (d_inode_t *) dir_entry;
+    inode->i_mode = 777;
+    inode->i_size = 0;
+    inode->i_zone_off = 0;
+
+    // 申请数据块 (第三次写硬盘
+    inode->i_zone[inode->i_zone_off++] = get_data_sector();
+    printk("zone: %d, off: %d\n", inode->i_zone[0], inode->i_zone_off);
+
+    // 将inode对象写入硬盘 (第四次写硬盘
+    write_size = bwrite(g_active_hd->dev_no, inode_sector, (char *) inode, 512);
+    assert(write_size != -1);
+
+    kfree_s(dir_entry, 512);
+
+    printk("===== end: create root dir =====\n");
 }

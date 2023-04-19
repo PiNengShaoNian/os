@@ -39,6 +39,18 @@ typedef struct _d_inode_t {
     u8 i_zone_off;
 } __attribute__((packed)) d_inode_t;
 
+typedef enum {
+    FILE_TYPE_REGULAR = 1, // 普通文件
+    FILE_TYPE_DIRECTORY // 目录文件
+} file_type;
+
+typedef struct _dir_entry_t {
+    char name[16];  // 根据第一个字节是不是0来判断根目录扇区是否初始化
+    ushort inode;
+    file_type ft;
+    u32 dir_index;  // 如果是目录，下一个文件目录项的index
+} __attribute__((packed)) dir_entry_t;
+
 void ll_rw_block(int rw, buffer_head_t *bh);
 
 /**
@@ -53,6 +65,8 @@ buffer_head_t *bread(int dev, int from, int count);
 size_t bwrite(int dev, int from, char *buff, int size);
 
 int iget();
+
+int get_data_sector();
 
 void create_root_dir();
 
