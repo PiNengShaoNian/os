@@ -13,4 +13,9 @@ void put_char_shell(char ch);
 
 void del_char_shell();
 
+typedef struct _filepath_parse_result {
+    u32 depth;
+    char **data;
+} filepath_parse_result;
+
 #endif // OS_SHELL_H

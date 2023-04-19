@@ -6,6 +6,7 @@
 #include "../../include/linux/task.h"
 #include "../../include/string.h"
 #include "../../include/assert.h"
+#include "../../include/shell.h"
 #include "../../include/asm/io.h"
 
 extern task_t *current;
@@ -654,4 +655,73 @@ void create_dir(char *name) {
 
     kfree_s(bh->data, 512);
     kfree_s(bh, sizeof(buffer_head_t));
+}
+
+static get_filepath_depth(const char *filepath) {
+    assert(filepath != NULL);
+
+    int ret = 0;
+
+    char *tmp = filepath;
+    char ch;
+    while ('\0' != (ch = *tmp++)) {
+        if ('/' == ch) ret++;
+    }
+
+    return ret;
+}
+
+static filepath_parse_result *parse_filepath(const char *filepath) {
+    assert(filepath != NULL);
+
+    filepath_parse_result *ret = kmalloc(sizeof(filepath_parse_result));
+
+    ret->depth = get_filepath_depth(filepath);
+    ret->data = kmalloc(sizeof(char *) * ret->depth);
+
+    // 解析出每个/所在的位置
+    char ch;
+    int ch_off = 0;
+    int ret_off = 0;
+    while ((ch = filepath[ch_off]) != '\0') {
+        if (ch == '/') {
+            ret->data[ret_off] = (char *) ch_off;
+            ret_off++;
+        }
+
+        ch_off += 1;
+    }
+
+    // 将/之间的数据取出来，索引顺序即目录父子关系
+    for (int i = 0; i < ret->depth; ++i) {
+        // 目录名从哪开始
+        int index = (int) ret->data[i];
+
+        // 目录名到哪（如果是最后一个/就到结尾
+        int index_next = (i != ret->depth - 1) ? (int) ret->data[i + 1] : strlen(filepath);
+
+        // 目录名称不能超过16
+        assert(index_next - index - 1 < 16);
+
+        // 这里为什么要申请16
+        ret->data[i] = kmalloc(16);
+        memset(ret->data[i], 0, 16);
+        memcpy(ret->data[i], filepath + index + 1, index_next - index - 1);
+    }
+
+    return ret;
+}
+
+void rm_directory(const char *filepath) {
+    assert(filepath != NULL);
+
+    filepath_parse_result *parse_result = parse_filepath(filepath);
+    if (parse_result->depth == 0) {
+        printk("path depth less than 1!\n");
+        return;
+    }
+
+    for (int i = 0; i < parse_result->depth; ++i) {
+        printk("%s\n", parse_result->data[i]);
+    }
 }

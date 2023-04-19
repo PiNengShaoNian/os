@@ -150,6 +150,8 @@ void exec_command_shell() {
             create_dir(commands[i]);
             printk("===== end mkdir: %s =====\n", commands[i]);
         }
+    } else if (!strcmp("rm", commands[0])) {
+        rm_directory(commands[1]);
     } else {
         for (int i = 0; i < command_len; ++i) {
             printk("%s ", commands[i]);
