@@ -137,4 +137,6 @@ void ls_current_dir();
 
 void create_dir(char *name);
 
+void cd_directory(const char *filepath);
+
 #endif // OS_FS_H

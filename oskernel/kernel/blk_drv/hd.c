@@ -624,7 +624,7 @@ void create_dir(char *name) {
 
     // 父目录的属性有更新，写回去
     memset(dir_entry, 0, sizeof(dir_entry_t));
-    memcpy(dir_entry, current->current_active_dir, sizeof(dir_entry));
+    memcpy(dir_entry, current->current_active_dir, sizeof(dir_entry_t));
 
     printk("[write parent dir info]dir index:%d\n", current->current_active_dir->dir_index);
 
@@ -677,6 +677,9 @@ static filepath_parse_result *parse_filepath(const char *filepath) {
     filepath_parse_result *ret = kmalloc(sizeof(filepath_parse_result));
 
     ret->depth = get_filepath_depth(filepath);
+
+    if (ret->depth == 0) return ret;
+
     ret->data = kmalloc(sizeof(char *) * ret->depth);
 
     // 解析出每个/所在的位置
@@ -712,17 +715,38 @@ static filepath_parse_result *parse_filepath(const char *filepath) {
     return ret;
 }
 
+static void free_parse_result(filepath_parse_result *ptr) {
+    if (ptr->depth == 0) {
+        kfree_s(ptr, sizeof(filepath_parse_result));
+    } else {
+        for (int i = 0; i < ptr->depth; ++i) {
+            kfree_s(ptr->data[i], 16);
+        }
+        kfree_s(ptr, sizeof(filepath_parse_result));
+    }
+}
+
 /**
  * 获取一个目录的所有目录项（只实现读第一个数据区
  * @param dir_name
  * @return
  */
 static dir_entry_t *get_root_directory_children() {
+    int root_dir_entry_sector = g_active_super_block->root_lba;
+    buffer_head_t *bh = bread(g_active_hd->dev_no, root_dir_entry_sector, 1);
+    dir_entry_t *root_dir_entry = (dir_entry_t *) bh->data;
+    int dir_index = root_dir_entry->dir_index;
+    kfree_s(bh->data, 512);
+    kfree_s(bh, sizeof(dir_entry_t));
+    if (dir_index == 0) {
+        return NULL;
+    }
+
     // 拿到根目录存储数据的扇区号
     int zone = current->root_dir_inode->i_zone[current->root_dir_inode->i_zone_off - 1];
 
     // 读硬盘拿到根目录中所有的目录项
-    buffer_head_t *bh = bread(g_active_hd->dev_no, zone, 1);
+    bh = bread(g_active_hd->dev_no, zone, 1);
 
     dir_entry_t *ret = (dir_entry_t *) bh->data;
 
@@ -735,15 +759,23 @@ void rm_directory(const char *filepath) {
     assert(filepath != NULL);
 
     int write_size = 0;
-    char *buf = kmalloc(512);
 
     filepath_parse_result *parse_result = parse_filepath(filepath);
     if (parse_result->depth == 0) {
         printk("path depth less than 1!\n");
+        free_parse_result(parse_result);
         return;
     }
 
     dir_entry_t *children = get_root_directory_children();
+    if (children == NULL) {
+        printk("empty!\n");
+        free_parse_result(parse_result);
+        return;
+    }
+
+    char *buf = kmalloc(512);
+
     if (children->name[0] == 0) {
         printk("empty!\n");
         goto done;
@@ -797,6 +829,76 @@ void rm_directory(const char *filepath) {
     done:
     kfree_s(buf, 512);
     kfree_s(children, 512);
+    free_parse_result(parse_result);
+}
+
+void cd_directory(const char *filepath) {
+    assert(filepath != NULL);
+
+    // 解析文件路径
+    filepath_parse_result *parse_result = parse_filepath(filepath);
+    if (parse_result->depth == 0) {
+        printk("path depth less than 1!\n");
+        free_parse_result(parse_result);
+        return;
+    }
+
+    // 拿到目录项
+    dir_entry_t *children = get_root_directory_children();
+    if (children == NULL) {
+        free_parse_result(parse_result);
+        printk("empty\n");
+        return;
+    }
+
+    if (children->name[0] == 0) { // 如果是空目录
+        printk("empty\n");
+        goto cleanup;
+    }
+
+    // 判断目录是否存在
+    dir_entry_t *entry = NULL;
+    dir_entry_t *tmp = children;
+    while (tmp != NULL && (tmp->name[0] != 0)) {
+        if (!strcmp(parse_result->data[0], tmp->name)) {
+            entry = tmp;
+            break;
+        }
+
+        tmp++;
+    }
+
+    // 如果目录不存在
+    if (entry == NULL) {
+        printk("empty!\n");
+        goto cleanup;
+    }
+
+    // 判断是不是目录
+    if (entry->ft != FILE_TYPE_DIRECTORY) {
+        printk("Not a directory!\n");
+        goto cleanup;
+    }
+
+    print_dir_entry(entry);
+
+    // 获取inode
+    buffer_head_t *bh = bread(g_active_hd->dev_no, g_active_super_block->inode_table_lba, 1);
+    m_inode_t *inode = kmalloc(sizeof(m_inode_t));
+    memcpy(inode, bh->data + entry->inode * sizeof(d_inode_t), sizeof(m_inode_t));
+    kfree_s(bh->data, 512);
+    kfree_s(bh, sizeof(buffer_head_t));
+    kfree_s(current->current_active_dir_inode, sizeof(d_inode_t));
+    current->current_active_dir_inode = inode;
+
+    dir_entry_t *current_active_dir = kmalloc(sizeof(dir_entry_t));
+    memcpy(current_active_dir, entry, sizeof(dir_entry_t));
+    kfree_s(current->current_active_dir, sizeof(dir_entry_t));
+    current->current_active_dir = current_active_dir;
+
+    cleanup:
+    kfree_s(children, 512);
+    free_parse_result(parse_result);
 }
 
 
