@@ -5,8 +5,6 @@
 
 extern void switch_task(task_t *task);
 
-extern void switch_idle_task(task_t *task);
-
 extern task_t *tasks[NR_TASKS];
 
 task_t *current = NULL;

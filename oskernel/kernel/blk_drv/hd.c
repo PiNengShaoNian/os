@@ -7,7 +7,6 @@
 #include "../../include/string.h"
 #include "../../include/assert.h"
 #include "../../include/shell.h"
-#include "../../include/asm/io.h"
 
 extern task_t *current;
 
@@ -68,7 +67,7 @@ static void _hd_init() {
 
     g_hd_number = hd_number;
 
-    printk("disk number: %d\n", hd_number);
+    INFO_PRINT("disk number: %d\n", hd_number);
 
     for (int i = 0; i < hd_number; ++i) {
         hd_t *hd;
@@ -115,7 +114,7 @@ static void _hd_init() {
 }
 
 void hd_init() {
-    printk("hd init...\n");
+    INFO_PRINT("hd init...\n");
 
     _ide_channel_init();
     _hd_init();
@@ -173,13 +172,13 @@ static super_block_t *find_empty_super_block() {
  * @param buff 第一个分区的超级块信息
  */
 static void load_super_block(buffer_head_t *buff) {
-    printk("The superblock has been initialized. loading...\n");
+    INFO_PRINT("The superblock has been initialized. loading...\n");
 
     for (int i = 0; i < HD_PARTITION_MAX; ++i) {
         hd_partition_t *partition = &g_active_hd->partition[i];
 
         if (partition->start_sect == 0) {
-            printk("[load super block]hd partition %d is null! pass..\n", i);
+            INFO_PRINT("[load super block]hd partition %d is null! pass..\n", i);
             continue;
         }
 
@@ -196,14 +195,14 @@ static void load_super_block(buffer_head_t *buff) {
             kfree_s(buff, sizeof(buffer_head_t));
         }
 
-        printk("[load super block]hd: %d, partition: %d, completed..\n", g_active_hd->dev_no, i);
+        INFO_PRINT("[load super block]hd: %d, partition: %d, completed..\n", g_active_hd->dev_no, i);
 
         // 挂载分区
         if (i == 0) {
             mount_partition(&g_super_block[0]);
 
             // 初始化空闲块位图
-            printk("[init block bitmap]read block bitmap sector: %d\n", g_super_block->block_bitmap_lba);
+            INFO_PRINT("[init block bitmap]read block bitmap sector: %d\n", g_super_block->block_bitmap_lba);
 
 //            buff = bread(g_active_hd->dev_no, g_super_block->block_bitmap_lba, 1);
 //
@@ -217,7 +216,7 @@ static void load_super_block(buffer_head_t *buff) {
 //            kfree_s(buff, sizeof(buffer_head_t));
 
             // 初始化inode结点位图
-            printk("[init inode bitmap]read inode bitmap sector: %d\n", g_super_block->inode_bitmap_lba);
+            INFO_PRINT("[init inode bitmap]read inode bitmap sector: %d\n", g_super_block->inode_bitmap_lba);
 
 //            buff = bread(g_active_hd->dev_no, g_super_block->inode_bitmap_lba, 1);
 //
@@ -254,7 +253,7 @@ static bool check_super_block_is_init() {
 void init_super_block() {
     assert(g_active_hd != NULL);
 
-    printk("===== start: init super block =====\n");
+    INFO_PRINT("===== start: init super block =====\n");
 
     // 检测超级块是否创建
     if (check_super_block_is_init()) {
@@ -265,7 +264,7 @@ void init_super_block() {
         hd_partition_t *partition = &g_active_hd->partition[i];
 
         if (partition->start_sect == 0) {
-            printk("[init super block]hd partition %d is null! pass..\n", i);
+            INFO_PRINT("[init super block]hd partition %d is null! pass..\n", i);
 
             continue;
         }
@@ -316,7 +315,7 @@ void init_super_block() {
         if (write_size == -1) {
             panic("save super block fail");
         } else {
-            printk("save super block success: dev: %d, partition index: %d\n", g_active_hd->dev_no, i);
+            INFO_PRINT("save super block success: dev: %d, partition index: %d\n", g_active_hd->dev_no, i);
         }
     }
 
@@ -355,12 +354,12 @@ void print_super_block() {
 }
 
 void print_block_bitmap() {
-    printk("print block bitmap\n");
+    INFO_PRINT("print block bitmap\n");
 
     assert(g_active_super_block != NULL);
 
-    printk("block bitmap lba: %d\n", g_active_super_block->block_bitmap_lba);
-    printk("block bitmap sectors: %d\n", g_active_super_block->block_bitmap_sects);
+    INFO_PRINT("block bitmap lba: %d\n", g_active_super_block->block_bitmap_lba);
+    INFO_PRINT("block bitmap sectors: %d\n", g_active_super_block->block_bitmap_sects);
 
     printk("[mm]block bitmap: ");
     for (int i = 0; i < 10; ++i) {
@@ -380,7 +379,7 @@ void print_block_bitmap() {
 }
 
 void reset_block_bitmap() {
-    printk("reset block bitmap\n");
+    INFO_PRINT("reset block bitmap\n");
 
     // 将内存中的全置为0
     memset(block_bitmap_buf, 0, 512);
@@ -394,12 +393,12 @@ void reset_block_bitmap() {
 }
 
 void print_inode_bitmap() {
-    printk("print inode bitmap\n");
+    INFO_PRINT("print inode bitmap\n");
 
     assert(g_active_super_block != NULL);
 
-    printk("inode bitmap lba: %d\n", g_active_super_block->inode_bitmap_lba);
-    printk("inode bitmap sectors: %d\n", g_active_super_block->inode_bitmap_sects);
+    INFO_PRINT("inode bitmap lba: %d\n", g_active_super_block->inode_bitmap_lba);
+    INFO_PRINT("inode bitmap sectors: %d\n", g_active_super_block->inode_bitmap_sects);
 
     printk("[mm]inode bitmap: ");
     for (int i = 0; i < 10; ++i) {
@@ -581,17 +580,19 @@ void ls_current_dir() {
  * @param name
  */
 void create_dir(char *name) {
+    CLI
+
     int write_size, inode_index;
 
     int parent_inode_current_zone = current->current_active_dir_inode->i_zone[
             current->current_active_dir_inode->i_zone_off - 1];
     assert(parent_inode_current_zone >= 0);
 
-    printk("[%s]parent_inode_current_zone: %d\n", __FUNCTION__, parent_inode_current_zone);
+    INFO_PRINT("[%s]parent_inode_current_zone: %d\n", __FUNCTION__, parent_inode_current_zone);
 
     // 读出存储目录项的那个扇区
     buffer_head_t *bh = bread(g_active_hd->dev_no, parent_inode_current_zone, 1);
-    printk("[%s]create %d directory\n", __FUNCTION__, current->current_active_dir->dir_index);
+    INFO_PRINT("[%s]create %d directory\n", __FUNCTION__, current->current_active_dir->dir_index);
 
     // 1. 创建目录项
     dir_entry_t *dir_entry = bh->data + sizeof(dir_entry_t) * current->current_active_dir->dir_index++;
@@ -610,13 +611,13 @@ void create_dir(char *name) {
     write_size = bwrite(g_active_hd->dev_no, parent_inode_current_zone, bh->data, 512);
     assert(write_size != -1);
 
-    printk("[save directory entry]sector: %d\n", parent_inode_current_zone);
+    INFO_PRINT("[save directory entry]sector: %d\n", parent_inode_current_zone);
 
     // 父目录的属性有更新，写回去
     memset(dir_entry, 0, sizeof(dir_entry_t));
     memcpy(dir_entry, current->current_active_dir, sizeof(dir_entry_t));
 
-    printk("[write parent dir info]dir index:%d\n", current->current_active_dir->dir_index);
+    INFO_PRINT("[write parent dir info]dir index:%d\n", current->current_active_dir->dir_index);
 
     write_size = bwrite(g_active_hd->dev_no, g_active_super_block->root_lba, dir_entry, 512);
     assert(write_size != -1);
@@ -645,6 +646,8 @@ void create_dir(char *name) {
 
     kfree_s(bh->data, 512);
     kfree_s(bh, sizeof(buffer_head_t));
+
+    STI
 }
 
 static get_filepath_depth(const char *filepath) {
@@ -746,20 +749,21 @@ static dir_entry_t *get_root_directory_children() {
 }
 
 void rm_directory(const char *filepath) {
+    CLI
     assert(filepath != NULL);
 
     int write_size = 0;
 
     filepath_parse_result *parse_result = parse_filepath(filepath);
     if (parse_result->depth == 0) {
-        printk("path depth less than 1!\n");
+        INFO_PRINT("path depth less than 1!\n");
         free_parse_result(parse_result);
         return;
     }
 
     dir_entry_t *children = get_root_directory_children();
     if (children == NULL) {
-        printk("empty!\n");
+        INFO_PRINT("empty!\n");
         free_parse_result(parse_result);
         return;
     }
@@ -767,7 +771,7 @@ void rm_directory(const char *filepath) {
     char *buf = kmalloc(512);
 
     if (children->name[0] == 0) {
-        printk("empty!\n");
+        INFO_PRINT("empty!\n");
         goto done;
     }
 
@@ -784,13 +788,7 @@ void rm_directory(const char *filepath) {
     }
 
     if (entry == NULL) {
-        printk("directory %s not exists", parse_result->data[0]);
-        goto done;
-    }
-
-    // 判断是不是目录
-    if (entry->ft != FILE_TYPE_DIRECTORY) {
-        printk("not a directory\n");
+        INFO_PRINT("directory %s not exists", parse_result->data[0]);
         goto done;
     }
 
@@ -799,7 +797,7 @@ void rm_directory(const char *filepath) {
     current->current_active_dir->dir_index--;
     memcpy(buf, current->current_active_dir, sizeof(dir_entry_t));
 
-    printk("[write parent dir info]dir index:%d\n", current->current_active_dir->dir_index);
+    INFO_PRINT("[write parent dir info]dir index:%d\n", current->current_active_dir->dir_index);
 
     write_size = bwrite(g_active_hd->dev_no, g_active_super_block->root_lba, buf, 512);
     assert(write_size != -1);
@@ -820,6 +818,7 @@ void rm_directory(const char *filepath) {
     kfree_s(buf, 512);
     kfree_s(children, 512);
     free_parse_result(parse_result);
+    STI
 }
 
 void cd_directory(const char *filepath) {
@@ -838,7 +837,7 @@ void cd_directory(const char *filepath) {
         // 解析文件路径
         filepath_parse_result *parse_result = parse_filepath(filepath);
         if (parse_result->depth == 0) {
-            printk("path depth less than 1!\n");
+            INFO_PRINT("path depth less than 1!\n");
             free_parse_result(parse_result);
             kfree_s(entry, sizeof(dir_entry_t));
             return;
@@ -849,7 +848,7 @@ void cd_directory(const char *filepath) {
         if (children == NULL) {
             free_parse_result(parse_result);
             kfree_s(entry, sizeof(dir_entry_t));
-            printk("empty\n");
+            INFO_PRINT("empty\n");
             return;
         }
 
@@ -883,13 +882,13 @@ void cd_directory(const char *filepath) {
 
     // 如果目录不存在
     if (!found_entry) {
-        printk("empty!\n");
+        INFO_PRINT("empty!\n");
         goto cleanup;
     }
 
     // 判断是不是目录
     if (entry->ft != FILE_TYPE_DIRECTORY) {
-        printk("Not a directory!\n");
+        INFO_PRINT("Not a directory!\n");
         goto cleanup;
     }
 
@@ -924,16 +923,17 @@ void print_dir_entry(dir_entry_t *entry) {
 }
 
 void create_file(char *name) {
+    CLI
     int parent_inode_current_zone, write_size, inode_index;
 
     parent_inode_current_zone = current->current_active_dir_inode->i_zone[
             current->current_active_dir_inode->i_zone_off - 1];
-    printk("[%s]parent data zone: %d\n", __FUNCTION__, parent_inode_current_zone);
+    INFO_PRINT("[%s]parent data zone: %d\n", __FUNCTION__, parent_inode_current_zone);
 
     // 读出存储目录项的那个扇区
     buffer_head_t *bh = bread(g_active_hd->dev_no, parent_inode_current_zone, 1);
 
-    printk("[%s]create %d file\n", __FUNCTION__, current->current_active_dir->dir_index);
+    INFO_PRINT("[%s]create %d file\n", __FUNCTION__, current->current_active_dir->dir_index);
 
     // 1、创建目录项
     dir_entry_t *dir_entry = bh->data + sizeof(dir_entry_t) * current->current_active_dir->dir_index++;
@@ -947,7 +947,7 @@ void create_file(char *name) {
     // 2、申请inode index（第一次写硬盘
     inode_index = dir_entry->inode = iget();
 
-    printk("[%s]file inode: %d\n", __FUNCTION__, inode_index);
+    INFO_PRINT("[%s]file inode: %d\n", __FUNCTION__, inode_index);
 
     // 3、将目录的目录项写入硬盘（第二次写硬盘
     write_size = bwrite(g_active_hd->dev_no, parent_inode_current_zone, bh->data, 512);
@@ -957,7 +957,7 @@ void create_file(char *name) {
     memset(bh->data, 0, 512);
     memcpy(bh->data, current->current_active_dir, sizeof(dir_entry_t));
 
-    printk("[%s]next dir index:%d\n", __FUNCTION__, current->current_active_dir->dir_index);
+    INFO_PRINT("[%s]next dir index:%d\n", __FUNCTION__, current->current_active_dir->dir_index);
 
     write_size = bwrite(g_active_hd->dev_no, g_active_super_block->root_lba, bh->data, 512);
     assert(write_size != -1);
@@ -967,7 +967,7 @@ void create_file(char *name) {
     /* 存储inode */
     int inode_sector = g_active_super_block->inode_table_lba;
 
-    printk("[%s]inode sector: %d\n", __FUNCTION__, inode_sector);
+    INFO_PRINT("[%s]inode sector: %d\n", __FUNCTION__, inode_sector);
 
     bh = bread(g_active_hd->dev_no, inode_sector, 1);
 
@@ -980,7 +980,7 @@ void create_file(char *name) {
     // 申请数据块（第三次写硬盘
     inode->i_zone[inode->i_zone_off++] = get_data_sector();
 
-    printk("[%s]data sector: %d\n", __FUNCTION__, inode->i_zone[inode->i_zone_off - 1]);
+    INFO_PRINT("[%s]data sector: %d\n", __FUNCTION__, inode->i_zone[inode->i_zone_off - 1]);
 
     // 将inode对象写入硬盘（第四次写硬盘
     write_size = bwrite(g_active_hd->dev_no, inode_sector, bh->data, 512);
@@ -988,9 +988,11 @@ void create_file(char *name) {
 
     kfree_s(bh->data, 512);
     kfree_s(bh, sizeof(buffer_head_t));
+    STI
 }
 
 void write_file(const char *content, const char *filename) {
+    CLI
     assert(content != NULL);
     assert(filename != NULL);
 
@@ -1026,7 +1028,7 @@ void write_file(const char *content, const char *filename) {
 
     // 判断是不是目录
     if (FILE_TYPE_REGULAR != entry->ft) {
-        printk("Not a file!\n");
+        INFO_PRINT("Not a file!\n");
         kfree_s(children, 512);
         return;
     }
@@ -1059,9 +1061,11 @@ void write_file(const char *content, const char *filename) {
     INFO_PRINT("file %s not exists...\n", filename);
     create_file(filename);
     write_file(content, filename);
+    STI
 }
 
 int read_file(char *filename, char *buff) {
+    CLI
     assert(filename != NULL);
     assert(buff != NULL);
 
@@ -1095,7 +1099,7 @@ int read_file(char *filename, char *buff) {
 
     // 判断是不是目录
     if (entry->ft != FILE_TYPE_REGULAR) {
-        printk("not a file!\n");
+        INFO_PRINT("not a file!\n");
         return -1;
     }
 
@@ -1115,5 +1119,6 @@ int read_file(char *filename, char *buff) {
     kfree_s(bh->data, 512);
     kfree_s(bh, sizeof(buffer_head_t));
 
+    STI
     return 512;
 }

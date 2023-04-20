@@ -23,7 +23,7 @@ static int open_root_dir(int flags) {
     kfree_s(bh->data, 512);
     kfree_s(bh, sizeof(buffer_head_t));
 
-    printk("[%s]dir entry name: %s\n", __FUNCTION__, current->root_dir->name);
+    INFO_PRINT("dir entry name: %s\n", current->root_dir->name);
 
     // 拿到根目录的inode
     bh = bread(g_active_hd->dev_no, g_active_super_block->inode_table_lba, 1);
@@ -56,12 +56,12 @@ static int open_root_dir(int flags) {
 int sys_open(const char *pathname, int flags) {
     int fd = -1;
 
-    printk("===== start open %s =====\n", pathname);
+    INFO_PRINT("===== start open %s =====\n", pathname);
     if (!strcmp("/", pathname)) {
         fd = open_root_dir(flags);
     } else {}
 
-    printk("===== end open %s =====\n", pathname);
+    INFO_PRINT("===== end open %s =====\n", pathname);
 
     return fd;
 }
