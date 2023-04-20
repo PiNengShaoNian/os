@@ -536,19 +536,9 @@ void ls_current_dir() {
     u32 dir_inode = 0;
     u32 dir_index = 0;
 
-    if (!strcmp(current->current_active_dir->name, "/")) {
-        entry = current->current_active_dir;
-        dir_inode = entry->inode;
-        dir_index = entry->dir_index;
-    } else {
-        bh = bread(g_active_hd->dev_no, g_active_super_block->root_lba, 1);
-        entry = bh->data;
-        dir_inode = entry->inode;
-        dir_index = entry->dir_index;
-
-        kfree_s(bh->data, 512);
-        kfree_s(bh, sizeof(buffer_head_t));
-    }
+    entry = current->current_active_dir;
+    dir_inode = entry->inode;
+    dir_index = entry->dir_index;
 
     printk("inode index: %d\n", dir_inode);
     printk("dir index: %d\n", dir_index);
@@ -835,41 +825,64 @@ void rm_directory(const char *filepath) {
 void cd_directory(const char *filepath) {
     assert(filepath != NULL);
 
-    // 解析文件路径
-    filepath_parse_result *parse_result = parse_filepath(filepath);
-    if (parse_result->depth == 0) {
-        printk("path depth less than 1!\n");
-        free_parse_result(parse_result);
-        return;
-    }
+    dir_entry_t *entry = kmalloc(sizeof(dir_entry_t));
+    bool found_entry = false;
 
-    // 拿到目录项
-    dir_entry_t *children = get_root_directory_children();
-    if (children == NULL) {
-        free_parse_result(parse_result);
-        printk("empty\n");
-        return;
-    }
-
-    if (children->name[0] == 0) { // 如果是空目录
-        printk("empty\n");
-        goto cleanup;
-    }
-
-    // 判断目录是否存在
-    dir_entry_t *entry = NULL;
-    dir_entry_t *tmp = children;
-    while (tmp != NULL && (tmp->name[0] != 0)) {
-        if (!strcmp(parse_result->data[0], tmp->name)) {
-            entry = tmp;
-            break;
+    if (!strcmp("/", filepath)) {
+        buffer_head_t *bh = bread(g_active_hd->dev_no, g_active_super_block->root_lba, 1);
+        entry = memcpy(entry, bh->data, sizeof(dir_entry_t));
+        found_entry = true;
+        kfree_s(bh->data, 512);
+        kfree_s(bh, sizeof(buffer_head_t));
+    } else {
+        // 解析文件路径
+        filepath_parse_result *parse_result = parse_filepath(filepath);
+        if (parse_result->depth == 0) {
+            printk("path depth less than 1!\n");
+            free_parse_result(parse_result);
+            kfree_s(entry, sizeof(dir_entry_t));
+            return;
         }
 
-        tmp++;
+        // 拿到目录项
+        dir_entry_t *children = get_root_directory_children();
+        if (children == NULL) {
+            free_parse_result(parse_result);
+            kfree_s(entry, sizeof(dir_entry_t));
+            printk("empty\n");
+            return;
+        }
+
+        if (children->name[0] == 0) { // 如果是空目录
+            kfree_s(children, 512);
+            free_parse_result(parse_result);
+            kfree_s(entry, sizeof(dir_entry_t));
+            return;
+        }
+
+        // 判断目录是否存在
+        dir_entry_t *tmp = children;
+        while (tmp != NULL && (tmp->name[0] != 0)) {
+            if (!strcmp(parse_result->data[0], tmp->name)) {
+                found_entry = true;
+                break;
+            }
+
+            tmp++;
+        }
+
+        if (found_entry) {
+            memcpy(entry, tmp, sizeof(dir_entry_t));
+        }
+
+        kfree_s(children, 512);
+        free_parse_result(parse_result);
     }
 
+
+
     // 如果目录不存在
-    if (entry == NULL) {
+    if (!found_entry) {
         printk("empty!\n");
         goto cleanup;
     }
@@ -897,8 +910,7 @@ void cd_directory(const char *filepath) {
     current->current_active_dir = current_active_dir;
 
     cleanup:
-    kfree_s(children, 512);
-    free_parse_result(parse_result);
+    kfree_s(entry, sizeof(dir_entry_t));
 }
 
 
