@@ -8,6 +8,8 @@ extern void sched_task();
 
 extern void kernel_thread_fun(void *arg);
 
+extern void move_to_user_mode();
+
 extern task_t *current;
 extern int jiffy;
 extern int cpu_tickes;
@@ -131,7 +133,7 @@ task_t *create_child(char *name, task_fun_t fun, int priority) {
 }
 
 void *idle(void *arg) {
-    create_task("init", kernel_thread_fun, 1);
+    create_task("init", (task_fun_t) move_to_user_mode, 1);
 
     while (true) {
 //        printk("idle task running...\n");
@@ -171,7 +173,7 @@ void task_exit(int code, task_t *task) {
 
             current = NULL;
 
-            kfree_s(tmp->esp3 - PAGE_SIZE, PAGE_SIZE);
+            kfree_s((void *) (tmp->esp3 - PAGE_SIZE), PAGE_SIZE);
             kfree_s(tmp, PAGE_SIZE);
 
             break;
@@ -193,7 +195,7 @@ void current_task_exit(int code) {
 
             current = NULL;
 
-            kfree_s(tmp->esp3 - PAGE_SIZE, PAGE_SIZE);
+            kfree_s((void *) (tmp->esp3 - PAGE_SIZE), PAGE_SIZE);
             kfree_s(tmp, PAGE_SIZE);
 
             break;
