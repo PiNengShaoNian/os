@@ -30,8 +30,6 @@ int iget() {
     // 算下当前bitmap数据在哪个扇区
     int bitmap_sector = g_active_super_block->inode_bitmap_lba;
 
-    printk("[save inode bitmap]sector: %d\n", bitmap_sector);
-
     // 写回硬盘
     int write_size = bwrite(g_active_hd->dev_no, bitmap_sector, inode_bitmap_buf, 512);
     assert(write_size != -1);

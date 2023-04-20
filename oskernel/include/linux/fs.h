@@ -139,4 +139,6 @@ void create_dir(char *name);
 
 void cd_directory(const char *filepath);
 
+void create_file(char *name);
+
 #endif // OS_FS_H

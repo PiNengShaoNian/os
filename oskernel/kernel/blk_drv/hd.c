@@ -564,7 +564,7 @@ void ls_current_dir() {
 
     entry = bh->data;
     for (int i = 0; i < dir_index; ++i) {
-        printk("%s ", entry->name);
+        printk("%s%s ", entry->name, (FILE_TYPE_DIRECTORY == entry->ft) ? "[D]" : "[R]");
 
         entry++;
     }
@@ -921,4 +921,71 @@ void print_dir_entry(dir_entry_t *entry) {
     printk("file type: %d\n", entry->ft);
     printk("inode: %d\n", entry->inode);
     printk("dir index: %d\n", entry->dir_index);
+}
+
+void create_file(char *name) {
+    int parent_inode_current_zone, write_size, inode_index;
+
+    parent_inode_current_zone = current->current_active_dir_inode->i_zone[
+            current->current_active_dir_inode->i_zone_off - 1];
+    printk("[%s]parent data zone: %d\n", __FUNCTION__, parent_inode_current_zone);
+
+    // 读出存储目录项的那个扇区
+    buffer_head_t *bh = bread(g_active_hd->dev_no, parent_inode_current_zone, 1);
+
+    printk("[%s]create %d file\n", __FUNCTION__, current->current_active_dir->dir_index);
+
+    // 1、创建目录项
+    dir_entry_t *dir_entry = bh->data + sizeof(dir_entry_t) * current->current_active_dir->dir_index++;
+
+    memset(dir_entry->name, 0, 16);
+    memcpy(dir_entry->name, name, strlen(name));
+
+    dir_entry->ft = FILE_TYPE_REGULAR;
+    dir_entry->dir_index = 0;
+
+    // 2、申请inode index（第一次写硬盘
+    inode_index = dir_entry->inode = iget();
+
+    printk("[%s]file inode: %d\n", __FUNCTION__, inode_index);
+
+    // 3、将目录的目录项写入硬盘（第二次写硬盘
+    write_size = bwrite(g_active_hd->dev_no, parent_inode_current_zone, bh->data, 512);
+    assert(write_size != -1);
+
+    // 父目录的属性有更新，写回去
+    memset(bh->data, 0, 512);
+    memcpy(bh->data, current->current_active_dir, sizeof(dir_entry_t));
+
+    printk("[%s]next dir index:%d\n", __FUNCTION__, current->current_active_dir->dir_index);
+
+    write_size = bwrite(g_active_hd->dev_no, g_active_super_block->root_lba, bh->data, 512);
+    assert(write_size != -1);
+    kfree_s(bh->data, 512);
+    kfree_s(bh, sizeof(buffer_head_t));
+
+    /* 存储inode */
+    int inode_sector = g_active_super_block->inode_table_lba;
+
+    printk("[%s]inode sector: %d\n", __FUNCTION__, inode_sector);
+
+    bh = bread(g_active_hd->dev_no, inode_sector, 1);
+
+    d_inode_t *inode = bh->data + inode_index * sizeof(d_inode_t);
+
+    inode->i_mode = 777;
+    inode->i_size = 512;
+    inode->i_zone_off = 0;
+
+    // 申请数据块（第三次写硬盘
+    inode->i_zone[inode->i_zone_off++] = get_data_sector();
+
+    printk("[%s]data sector: %d\n", __FUNCTION__, inode->i_zone[inode->i_zone_off - 1]);
+
+    // 将inode对象写入硬盘（第四次写硬盘
+    write_size = bwrite(g_active_hd->dev_no, inode_sector, bh->data, 512);
+    assert(write_size != -1);
+
+    kfree_s(bh->data, 512);
+    kfree_s(bh, sizeof(buffer_head_t));
 }

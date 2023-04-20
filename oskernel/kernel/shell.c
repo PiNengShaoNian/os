@@ -145,15 +145,13 @@ void exec_command_shell() {
     } else if (!strcmp("ls", commands[0])) {
         ls_current_dir();
     } else if (!strcmp("mkdir", commands[0])) {
-        for (int i = 1; i < command_len; ++i) {
-            printk("===== start mkdir: %s =====\n", commands[i]);
-            create_dir(commands[i]);
-            printk("===== end mkdir: %s =====\n", commands[i]);
-        }
+        create_dir(commands[1]);
     } else if (!strcmp("rm", commands[0])) {
         rm_directory(commands[1]);
     } else if (!strcmp("cd", commands[0])) {
         cd_directory(commands[1]);
+    } else if (!strcmp("touch", commands[0])) {
+        create_file(commands[1]);
     } else {
         for (int i = 0; i < command_len; ++i) {
             printk("%s ", commands[i]);

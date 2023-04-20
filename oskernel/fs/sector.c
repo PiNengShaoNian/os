@@ -31,8 +31,6 @@ int get_data_sector() {
     // 算下当前bitmap数据在哪个扇区
     int bitmap_sector = g_active_super_block->block_bitmap_lba;
 
-    printk("[save block bitmap]sector: %d\n", bitmap_sector);
-
     // 写回硬盘
     int write_size = bwrite(g_active_hd->dev_no, bitmap_sector, &block_bitmap_buf, 512);
     assert(write_size != -1);
