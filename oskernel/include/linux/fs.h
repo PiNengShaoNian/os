@@ -141,4 +141,6 @@ void cd_directory(const char *filepath);
 
 void create_file(char *name);
 
+void write_file(const char *content, const char *filename);
+
 #endif // OS_FS_H

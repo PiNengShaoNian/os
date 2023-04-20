@@ -152,6 +152,8 @@ void exec_command_shell() {
         cd_directory(commands[1]);
     } else if (!strcmp("touch", commands[0])) {
         create_file(commands[1]);
+    } else if (!strcmp("echo", commands[0])) {
+        write_file(commands[1], commands[3]);
     } else {
         for (int i = 0; i < command_len; ++i) {
             printk("%s ", commands[i]);
