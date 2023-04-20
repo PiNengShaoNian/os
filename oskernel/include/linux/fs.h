@@ -143,4 +143,6 @@ void create_file(char *name);
 
 void write_file(const char *content, const char *filename);
 
+int read_file(char *filename, char *buff);
+
 #endif // OS_FS_H

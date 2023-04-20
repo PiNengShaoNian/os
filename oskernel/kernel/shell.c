@@ -154,6 +154,11 @@ void exec_command_shell() {
         create_file(commands[1]);
     } else if (!strcmp("echo", commands[0])) {
         write_file(commands[1], commands[3]);
+    } else if (!strcmp("cat", commands[0])) {
+        char buff[512];
+        int n = read_file(commands[1], buff);
+        if (n > 0)
+            INFO_PRINT("%s\n", buff);
     } else {
         for (int i = 0; i < command_len; ++i) {
             printk("%s ", commands[i]);

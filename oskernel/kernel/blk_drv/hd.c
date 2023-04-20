@@ -1060,3 +1060,60 @@ void write_file(const char *content, const char *filename) {
     create_file(filename);
     write_file(content, filename);
 }
+
+int read_file(char *filename, char *buff) {
+    assert(filename != NULL);
+    assert(buff != NULL);
+
+    dir_entry_t *entry = NULL;
+
+    // 拿到目录项
+    dir_entry_t *children = get_root_directory_children();
+    if (children == NULL || children->name[0] == 0) { // 如果是空目录
+        INFO_PRINT("file not exists: %s\n", filename);
+        if (children) kfree_s(children, 512);
+        return -1;
+    }
+
+    // 判断文件是否存在
+    dir_entry_t *tmp = (dir_entry_t *) children;
+    while (tmp != NULL && (tmp->name[0] != 0)) {
+        if (!strcmp(filename, tmp->name)) {
+            entry = tmp;
+            break;
+        }
+
+        tmp++;
+    }
+
+    // 如果目录不存在
+    if (entry == NULL) {
+        INFO_PRINT("file not exist: %s\n", filename);
+        kfree_s(children, 512);
+        return -1;
+    }
+
+    // 判断是不是目录
+    if (entry->ft != FILE_TYPE_REGULAR) {
+        printk("not a file!\n");
+        return -1;
+    }
+
+    print_dir_entry(entry);
+
+    buffer_head_t *bh = bread(g_active_hd->dev_no, g_active_super_block->inode_table_lba, 1);
+    m_inode_t *inode = bh->data + entry->inode * sizeof(d_inode_t);
+    int zone = inode->i_zone[inode->i_zone_off - 1];
+
+    kfree_s(bh->data, 512);
+    kfree_s(bh, sizeof(buffer_head_t));
+
+    INFO_PRINT("data zone: %d\n", zone);
+
+    bh = bread(g_active_hd->dev_no, zone, 1);
+    memcpy(buff, bh->data, 512);
+    kfree_s(bh->data, 512);
+    kfree_s(bh, sizeof(buffer_head_t));
+
+    return 512;
+}
