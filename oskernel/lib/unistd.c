@@ -35,3 +35,11 @@ int fclose(FILE *stream) {
 
     return ret;
 }
+
+size_t fread(void *ptr, size_t size, FILE *stream) {
+    int ret;
+
+    __asm__ __volatile("int 0x80":"=a"(ret):"0"(__NR_fread), "b"(ptr), "c"(size), "d"(stream));
+
+    return ret;
+}

@@ -19,6 +19,7 @@ void *system_call_table[SYSTEM_CALL_TABLE_SIZE] = {
         sys_active_shell,
         sys_open_file,
         sys_close_file,
+        sys_read_file,
 };
 
 ssize_t sys_write(int fd, const void *buf, size_t count) {
@@ -54,4 +55,8 @@ file_t *sys_open_file(const char *filename, const char *mode) {
 
 int sys_close_file(FILE *stream) {
     return close_file(stream);
+}
+
+size_t sys_read_file(void *ptr, size_t size, FILE *stream) {
+    return read_file1(ptr, size, stream);
 }

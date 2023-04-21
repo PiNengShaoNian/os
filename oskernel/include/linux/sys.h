@@ -22,4 +22,6 @@ file_t *sys_open_file(const char *filename, const char *mode);
 
 int sys_close_file(FILE *stream);
 
+size_t sys_read_file(void *ptr, size_t size, FILE *stream);
+
 #endif // OSKERNEL_SYS_H

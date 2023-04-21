@@ -1215,3 +1215,24 @@ int close_file(FILE *stream) {
     kfree_s(stream, sizeof(file_t));
     return 0;
 }
+
+size_t read_file1(void *ptr, size_t size, FILE *stream) {
+    if (ptr == NULL || size == 0 || stream == NULL) {
+        return -1;
+    }
+
+    // 拿到数据存储的扇区
+    file_t *file = (file_t *) stream;
+
+    int zone = file->f_inode->i_zone[0];
+    INFO_PRINT("data zone: %d\n", zone);
+
+    buffer_head_t *bh = bread(g_active_hd->dev_no, zone, 1);
+
+    memcpy(ptr, bh->data, size);
+
+    kfree_s(bh->data, 512);
+    kfree_s(bh, sizeof(buffer_head_t));
+
+    return size;
+}

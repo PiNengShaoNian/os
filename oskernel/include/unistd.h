@@ -15,6 +15,7 @@
 #define __NR_active_shell   5
 #define __NR_fopen   6
 #define __NR_fclose   7
+#define __NR_fread      8
 
 #define _syscall0(type, name) \
   type name(void) \
@@ -83,5 +84,7 @@ void uactive_shell();
 FILE *fopen(const char *filename, const char *mode);
 
 int fclose(FILE *stream);
+
+size_t fread(void *ptr, size_t size, FILE *stream);
 
 #endif // OSKERNEL_UNISTD_H

@@ -5,7 +5,7 @@
 void fs_test() {
     printf("start test file system\n");
 
-    FILE *file = fopen("filename", "r");
+    FILE *file = fopen("test", "r");
 
     printf("file = 0x%x\n", file);
 
@@ -13,7 +13,18 @@ void fs_test() {
         return;
     }
 
-    int ret = fclose(file);
+    char buff[64] = {0};
+    int ret = fread(buff, 63, file);
+
+    if (ret < 0) {
+        printf("read failed\n");
+        goto cleanup;
+    }
+
+    printf("content: %s\n", buff);
+
+    cleanup:
+    ret = fclose(file);
 
     if (ret == 0) {
         printf("close success!\n");
