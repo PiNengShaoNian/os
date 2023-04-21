@@ -9,7 +9,7 @@
 
 extern void sched_task();
 
-extern void kernel_thread_fun(void *arg);
+extern void* kernel_thread_fun(void *arg);
 
 extern void move_to_user_mode();
 
@@ -160,7 +160,7 @@ void init_user_thread() {
 }
 
 void *idle(void *arg) {
-    create_task("init", (task_fun_t) init_user_thread, 1);
+    create_task("init", (task_fun_t) kernel_thread_fun, 1);
 
     while (true) {
 //        printk("idle task running...\n");

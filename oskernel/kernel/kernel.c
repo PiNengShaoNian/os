@@ -8,7 +8,9 @@
 // 因此，CR3寄存器在x86中扮演着关键的角色，它直接影响了虚拟地址到物理地址的映射。当操作系统需要切换进程时，
 // 需要更新CR3寄存器中存储的页目录表的基地址，以切换到新的地址空间。
 
-inline uint get_cr3() {
+inline uint
+
+get_cr3() {
     asm volatile("mov eax, cr3;");
 }
 
@@ -22,4 +24,8 @@ inline void enable_page() {
                  "or eax, 0x80000000;"
                  "mov cr0, eax;"
             );
+}
+
+uint get_cr2() {
+    asm volatile("mov eax, cr2;");
 }

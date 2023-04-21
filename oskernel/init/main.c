@@ -13,6 +13,8 @@ void kernel_main(void) {
     memory_init();
     memory_map_init();
 
+    virtual_memory_init();
+
     gdt_init();
     idt_init();
 

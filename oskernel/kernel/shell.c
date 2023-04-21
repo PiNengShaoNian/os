@@ -9,6 +9,8 @@
 
 extern void fs_test();
 
+extern void test_page_fault(const char *param);
+
 extern task_t *current;
 bool g_active_shell = false;
 
@@ -126,6 +128,10 @@ void exec_command_shell() {
     int command_len = 0;
     char **commands = parse_shell_command(&command_len);
 
+    // 清空用户输入的shell字符串
+    memset(g_shell_command, 0, 64);
+    g_shell_command_off = 0;
+
     if (!strcmp("1", commands[0])) {
         fs_test();
     } else if (!strcmp("print_super_block", commands[0])) {
@@ -161,6 +167,8 @@ void exec_command_shell() {
         int n = read_file(commands[1], buff);
         if (n > 0)
             INFO_PRINT("%s\n", buff);
+    } else if (!strcmp("test_pf", commands[0])) {
+        test_page_fault(commands[1]);
     } else {
         for (int i = 0; i < command_len; ++i) {
             printk("%s ", commands[i]);

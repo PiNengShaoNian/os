@@ -42,6 +42,8 @@ void memory_map_init();
 
 void *virtual_memory_init();
 
+void handle_page_fault(int addr);
+
 void *get_free_page();
 
 void free_page(void *p);
