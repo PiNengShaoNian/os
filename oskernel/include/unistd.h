@@ -13,7 +13,7 @@
 #define __NR_get_pid    3
 #define __NR_get_ppid   4
 #define __NR_active_shell   5
-
+#define __NR_fopen   6
 
 #define _syscall0(type, name) \
   type name(void) \
@@ -78,5 +78,7 @@ pid_t getpid();
 pid_t getppid();
 
 void uactive_shell();
+
+FILE *fopen(const char *filename, const char *mode);
 
 #endif // OSKERNEL_UNISTD_H

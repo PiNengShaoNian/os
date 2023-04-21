@@ -7,6 +7,8 @@
 #include "../include/string.h"
 #include "../include/assert.h"
 
+extern void fs_test();
+
 extern task_t *current;
 bool g_active_shell = false;
 
@@ -125,7 +127,7 @@ void exec_command_shell() {
     char **commands = parse_shell_command(&command_len);
 
     if (!strcmp("1", commands[0])) {
-        printk("run 1\n");
+        fs_test();
     } else if (!strcmp("print_super_block", commands[0])) {
         print_super_block();
     } else if (!strcmp("print_block_bitmap", commands[0])) {

@@ -1122,3 +1122,71 @@ int read_file(char *filename, char *buff) {
     STI
     return 512;
 }
+
+file_t *open_file(const char *filename, int flag) {
+    file_t *file = NULL;
+
+    int fd = find_empty_file_descriptor();
+    INFO_PRINT("fd: %d\n", fd);
+
+    dir_entry_t *entry = NULL;
+
+    dir_entry_t *children = get_root_directory_children();
+    if (children == NULL) {
+        INFO_PRINT("file not exists: %s\n", filename);
+        return file;
+    }
+
+    if (children->name[0] == 0) {
+        kfree_s(children, 512);
+        INFO_PRINT("file not exists: %s\n", filename);
+        return file;
+    }
+
+    // 判断文件是否存在
+    dir_entry_t *tmp = (dir_entry_t *) children;
+    while (NULL != tmp && (0 != tmp->name[0])) {
+        if (!strcmp(filename, tmp->name)) {
+            entry = tmp;
+            break;
+        }
+
+        tmp++;
+    }
+
+    if (entry == NULL) {
+        kfree_s(children, 512);
+        INFO_PRINT("file not exists: %s\n", filename);
+        return file;
+    }
+
+    if (entry->ft != FILE_TYPE_REGULAR) {
+        kfree_s(children, 512);
+        INFO_PRINT("not a file!\n");
+        return file;
+    }
+
+    print_dir_entry(entry);
+
+    // 获取inode
+    buffer_head_t *bh = bread(g_active_hd->dev_no, g_active_super_block->inode_table_lba, 1);
+    m_inode_t *inode = bh->data + entry->inode * sizeof(d_inode_t);
+
+    kfree_s(bh->data, 512);
+    kfree_s(bh, sizeof(buffer_head_t));
+    kfree_s(children, 512);
+
+    // 创建文件描述符
+    file = kmalloc(sizeof(file_t));
+    file->f_mode = flag;
+    file->f_flags = 0;
+    file->f_count = fd;
+    file->f_inode = inode;
+    file->f_pos = 0;
+
+    current->file_descriptor[fd] = file;
+
+    INFO_PRINT("file: 0x%x\n", file);
+
+    return file;
+}

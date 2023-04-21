@@ -16,7 +16,8 @@ void *system_call_table[SYSTEM_CALL_TABLE_SIZE] = {
         sys_fork,
         sys_get_pid,
         sys_get_ppid,
-        sys_active_shell
+        sys_active_shell,
+        sys_open_file,
 };
 
 ssize_t sys_write(int fd, const void *buf, size_t count) {
@@ -40,4 +41,12 @@ pid_t sys_get_ppid() {
 
 void sys_active_shell() {
     active_shell();
+}
+
+void sys_open_file(const char *filename, const char *mode) {
+    int flag = O_RDONLY;
+
+    // 这里需要将用户传入的mode转为flag
+
+    return open_file(filename, flag);
 }

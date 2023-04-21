@@ -19,3 +19,11 @@ pid_t getppid() {
 void uactive_shell() {
     __asm__ __volatile__ ("int 0x80"::"a"(__NR_active_shell));
 }
+
+FILE *fopen(const char *filename, const char *mode) {
+    FILE *file = NULL;
+
+    __asm__ __volatile__ ("int 0x80":"=a"(file):"0"(__NR_fopen), "b"(filename), "c"(mode));
+
+    return file;
+}
