@@ -1183,10 +1183,35 @@ file_t *open_file(const char *filename, int flag) {
     file->f_count = fd;
     file->f_inode = inode;
     file->f_pos = 0;
+    memset(file->filename, 0, 16);
+    memcpy(file->filename, filename, strlen(filename));
 
     current->file_descriptor[fd] = file;
 
     INFO_PRINT("file: 0x%x\n", file);
 
     return file;
+}
+
+int close_file(FILE *stream) {
+    assert(stream != NULL);
+
+    bool found = false;
+    for (int i = 0; i < NR_OPEN; ++i) {
+        if (stream == current->file_descriptor[i]) {
+            found = true;
+            current->file_descriptor[i] = NULL;
+            break;
+        }
+    }
+
+    if (found == false) {
+        INFO_PRINT("close failed!\n");
+        return -1;
+    }
+
+    INFO_PRINT("found: 0x%x\n", stream);
+
+    kfree_s(stream, sizeof(file_t));
+    return 0;
 }

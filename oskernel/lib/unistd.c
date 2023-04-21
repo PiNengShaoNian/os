@@ -27,3 +27,11 @@ FILE *fopen(const char *filename, const char *mode) {
 
     return file;
 }
+
+int fclose(FILE *stream) {
+    int ret;
+
+    __asm__ __volatile__ ("int 0x80":"=a"(ret): "0"(__NR_fclose), "b"(stream));
+
+    return ret;
+}

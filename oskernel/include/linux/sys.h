@@ -18,6 +18,8 @@ int sys_open(const char *pathname, int flags);
 
 void sys_active_shell();
 
-void sys_open_file(const char *filename, const char *mode);
+file_t *sys_open_file(const char *filename, const char *mode);
+
+int sys_close_file(FILE *stream);
 
 #endif // OSKERNEL_SYS_H

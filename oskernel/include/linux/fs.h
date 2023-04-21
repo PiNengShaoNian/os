@@ -104,6 +104,7 @@ typedef struct _file_t {
     unsigned short f_count;// 对应文件句柄
     m_inode_t *f_inode; // 对应inode
     uint f_pos; // 文件偏移
+    char filename[16];
 } __attribute__((packed)) file_t;
 
 void ll_rw_block(int rw, buffer_head_t *bh);
