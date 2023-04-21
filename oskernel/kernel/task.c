@@ -1,6 +1,9 @@
 #include "../include/linux/kernel.h"
 #include "../include/linux/task.h"
 #include "../include/linux/mm.h"
+#include "../include/linux/fs.h"
+#include "../include/linux/hd.h"
+#include "../include/linux/sys.h"
 #include "../include/string.h"
 #include "../include/assert.h"
 
@@ -13,6 +16,8 @@ extern void move_to_user_mode();
 extern task_t *current;
 extern int jiffy;
 extern int cpu_tickes;
+
+extern hd_t *g_active_hd;
 
 task_t *tasks[NR_TASKS] = {0};
 
@@ -132,8 +137,30 @@ task_t *create_child(char *name, task_fun_t fun, int priority) {
     return task;
 }
 
+void init_user_thread() {
+    hd_init();
+
+    // 获取hdb盘的信息
+    init_active_hd_info(g_active_hd->dev_no);
+    init_active_hd_partition();
+
+    // 为每个分区创建超级块
+    init_super_block();
+
+    // 重置位图
+    reset_bitmap();
+
+    // 创建根目录
+    create_root_dir();
+
+    // 打开根目录
+    sys_open("/", O_RDWR);
+
+    move_to_user_mode();
+}
+
 void *idle(void *arg) {
-    create_task("init", (task_fun_t) move_to_user_mode, 1);
+    create_task("init", (task_fun_t) init_user_thread, 1);
 
     while (true) {
 //        printk("idle task running...\n");

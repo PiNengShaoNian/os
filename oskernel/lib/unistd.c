@@ -15,3 +15,7 @@ pid_t getppid() {
 
     return pid;
 }
+
+void uactive_shell() {
+    __asm__ __volatile__ ("int 0x80"::"a"(__NR_active_shell));
+}

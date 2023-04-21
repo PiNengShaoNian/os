@@ -15,4 +15,6 @@ extern pid_t sys_get_ppid();
 
 int sys_open(const char *pathname, int flags);
 
+void sys_active_shell();
+
 #endif // OSKERNEL_SYS_H

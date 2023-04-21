@@ -4,6 +4,7 @@
 #include "../include/linux/sys.h"
 #include "../include/linux/task.h"
 #include "../include/linux/sched.h"
+#include "../include/shell.h"
 
 #define SYSTEM_CALL_TABLE_SIZE 64
 
@@ -14,7 +15,8 @@ void *system_call_table[SYSTEM_CALL_TABLE_SIZE] = {
         sys_exit,
         sys_fork,
         sys_get_pid,
-        sys_get_ppid
+        sys_get_ppid,
+        sys_active_shell
 };
 
 ssize_t sys_write(int fd, const void *buf, size_t count) {
@@ -34,4 +36,8 @@ pid_t sys_get_pid() {
 
 pid_t sys_get_ppid() {
     return get_task_ppid(current);
+}
+
+void sys_active_shell() {
+    active_shell();
 }

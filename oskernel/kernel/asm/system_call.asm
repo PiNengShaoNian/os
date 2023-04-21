@@ -15,7 +15,18 @@ sys_fork:
     call create_child
     add esp, 12
 
-    ; 切到子进程的栈，把返回地址压进去
+    ; ss3                                  esp + 4 * 8
+    ; esp3                                 esp + 4 * 7
+    ; eflags                               esp + 4 * 6
+    ; cs                                   esp + 4 * 5
+    ; eip                                  esp + 4 * 4
+    ; edx                                  esp + 4 * 3
+    ; ecx                                  esp + 4 * 2
+    ; ebx                                  esp + 4 * 1
+    ; return address(system_call_entry)    esp + 4 * 0
+
+    ; 构建子进程的栈, 让他在内核态执行完.child_return后,在system_call_entry中返回，并接着通过调用iret进入用户态中
+    ; 其中esp3要换成子进程自己的
 .parent_run:
     mov edx, esp            ; 临时保存父进程的esp
 
@@ -45,7 +56,7 @@ sys_fork:
     push 0
     push 0
 
-    push ecx                ; 将返回地址压入栈
+    push ecx                ; 将返回地址压入栈, 让自己从返回到system_call_entry中
 
     mov [eax + 4], esp      ; 更新子进程的esp
 
