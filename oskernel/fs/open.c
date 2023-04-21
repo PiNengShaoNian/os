@@ -14,6 +14,8 @@ extern super_block_t *g_active_super_block;
 static int open_root_dir(int flags) {
     assert(current != NULL);
 
+    CLI
+
     int fd = find_empty_file_descriptor();
 
     // 拿到根目录的目录项
@@ -50,6 +52,7 @@ static int open_root_dir(int flags) {
     memcpy(current_active_dir_inode, current->root_dir_inode, sizeof(m_inode_t));
     current->current_active_dir_inode = current_active_dir_inode;
 
+    STI
     return fd;
 }
 

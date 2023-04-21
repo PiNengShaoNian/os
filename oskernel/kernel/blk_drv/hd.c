@@ -121,6 +121,8 @@ void hd_init() {
 }
 
 void init_active_hd_info(u8 dev) {
+    CLI
+
     buffer_head_t *bh = kmalloc(sizeof(buffer_head_t));
 
     bh->data = kmalloc(512);
@@ -142,9 +144,12 @@ void init_active_hd_info(u8 dev) {
 
     kfree_s(bh->data, 512);
     kfree_s(bh, sizeof(buffer_head_t));
+
+    STI
 }
 
 void init_active_hd_partition() {
+    CLI
     // 读取hdb盘的MBR扇区
     buffer_head_t *buff = bread(g_active_hd->dev_no, 0, 1);
 
@@ -154,6 +159,8 @@ void init_active_hd_partition() {
 
     kfree_s(buff->data, 512);
     kfree_s(buff, sizeof(buff));
+
+    STI
 }
 
 static super_block_t *find_empty_super_block() {
@@ -251,6 +258,8 @@ static bool check_super_block_is_init() {
 }
 
 void init_super_block() {
+    CLI
+
     assert(g_active_hd != NULL);
 
     INFO_PRINT("===== start: init super block =====\n");
@@ -320,6 +329,7 @@ void init_super_block() {
     }
 
     printk("===== end: init super block =====\n");
+    STI
 }
 
 void mount_partition(super_block_t *block) {
@@ -437,11 +447,17 @@ void print_bitmap() {
 }
 
 void reset_bitmap() {
+    CLI
+
     reset_block_bitmap();
     reset_inode_bitmap();
+
+    STI
 }
 
 void create_root_dir() {
+    CLI
+
     printk("===== start: create root dir =====\n");
 
     int write_size;
@@ -490,6 +506,8 @@ void create_root_dir() {
     kfree_s(dir_entry, 512);
 
     printk("===== end: create root dir =====\n");
+
+    STI
 }
 
 void print_root_dir() {
@@ -1235,4 +1253,26 @@ size_t read_file1(void *ptr, size_t size, FILE *stream) {
     kfree_s(bh, sizeof(buffer_head_t));
 
     return size;
+}
+
+size_t write_file1(const void *ptr, size_t size, FILE *stream) {
+    if (ptr == NULL || size == 0 || stream == NULL) {
+        return -1;
+    }
+
+    file_t *file = (file_t *) stream;
+    int zone = file->f_inode->i_zone[0];
+
+    INFO_PRINT("data zone: %d\n", zone);
+
+    buffer_head_t *bh = bread(g_active_hd->dev_no, zone, 1);
+
+    memcpy(bh->data, ptr, size);
+
+    int ret = bwrite(g_active_hd->dev_no, zone, bh->data, size);
+
+    kfree_s(bh->data, 512);
+    kfree_s(bh, sizeof(buffer_head_t));
+
+    return ret;
 }

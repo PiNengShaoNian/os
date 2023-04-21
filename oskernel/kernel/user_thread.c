@@ -13,8 +13,15 @@ void fs_test() {
         return;
     }
 
+    char *str = "3.14159";
+    int ret = fwrite(str, strlen(str), file);
+    if (ret < 0) {
+        printf("write failed!");
+        goto cleanup;
+    }
+
     char buff[64] = {0};
-    int ret = fread(buff, 63, file);
+    ret = fread(buff, 63, file);
 
     if (ret < 0) {
         printf("read failed\n");

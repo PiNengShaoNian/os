@@ -43,3 +43,11 @@ size_t fread(void *ptr, size_t size, FILE *stream) {
 
     return ret;
 }
+
+size_t fwrite(const void *ptr, size_t size, FILE *stream) {
+    size_t ret = -1;
+
+    __asm__ __volatile("int 0x80":"=a"(ret):"0"(__NR_fwrite), "b"(ptr), "c"(size), "d"(stream));
+
+    return ret;
+}
